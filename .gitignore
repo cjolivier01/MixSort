@@ -134,7 +134,6 @@ docs/api
 .code-workspace.code-workspace
 *.pkl
 *.npy
-*.pth
 *.onnx
 *.engine
 events.out.tfevents*
