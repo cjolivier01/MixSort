@@ -1,7 +1,7 @@
 #!/bin/bash
 # track on SportsMOT
 # you can set different parameters for basketball, volleyball, and football in SportsMOT for better results
-PYTHONPATH=$(pwd)/../yolox:$(pwd) \
+PYTHONPATH=$(pwd):$(pwd) \
   python \
     tools/track_mixsort.py \
     -expn yolox_m \
