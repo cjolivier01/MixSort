@@ -109,6 +109,7 @@ if __name__ == "__main__":
         args.experiment_name = exp.exp_name
 
     num_gpu = torch.cuda.device_count() if args.devices is None else args.devices
+    print(f"num_gpu={num_gpu}")
     assert num_gpu <= torch.cuda.device_count()
 
     launch(
