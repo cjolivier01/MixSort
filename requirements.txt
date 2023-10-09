@@ -11,11 +11,12 @@ thop
 ninja
 tabulate
 tensorboard
+cython_bbox
 lap
 motmetrics
 filterpy
 h5py
-
+sympy
 # verified versions
 onnx==1.8.1
 onnxruntime==1.8.0
