@@ -4,6 +4,8 @@ __pycache__/
 *$py.class
 .DS_Store
 /datasets/
+/.vscode
+/.trunk
 
 # C extensions
 *.so
@@ -130,6 +132,7 @@ dmypy.json
 .pyre/
 
 # output
+# /datasets
 docs/api
 .code-workspace.code-workspace
 *.pkl
@@ -137,5 +140,4 @@ docs/api
 *.onnx
 *.engine
 events.out.tfevents*
-#pretrained
 YOLOX_outputs
