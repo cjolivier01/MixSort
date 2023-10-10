@@ -8,6 +8,7 @@ tqdm
 #torchvision>=0.10.0
 Pillow
 thop
+loguru
 ninja
 tabulate
 tensorboard
