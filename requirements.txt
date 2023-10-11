@@ -4,10 +4,14 @@ numpy==1.22.3
 opencv_python
 loguru
 scikit-image
+einops
+jpeg4py
+easydict
 tqdm
 #torchvision>=0.10.0
 Pillow
 thop
+timm
 loguru
 pycocotools
 ninja

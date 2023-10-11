@@ -323,12 +323,24 @@ class MIXTracker(object):
         search_imgs = []
         search_boxes = []
         # vit dist
-        # self.logger=SummaryWriter('./debug_tensorboard')
-        # self.visualize(self.logger,template_imgs[0],search_img,search_box.clone())
-        # self.visualize_box(self.logger,img,stracks,"stracks")
-        # self.visualize_box(self.logger,img,dets,"dets")
+        #self.logger=SummaryWriter('./debug_tensorboard')
+        #self.visualize(self.logger,template_imgs[0],search_img,search_box.clone())
+        #self.visualize_box(self.logger,img,stracks,"stracks")
+        #self.visualize_box(self.logger,img,dets,"dets")
         vit = np.zeros((len(stracks), len(dets)), dtype=np.float64)
-        template_imgs = [s.template for s in stracks]
+
+        def _untuple(t):
+            if isinstance(t, tuple):
+                l = len(t)
+                if l == 1:
+                    return t[0]
+                elif l == 2 and not t[1]:
+                    return t[0]
+                else:
+                    assert False
+            return t
+
+        template_imgs = [_untuple(s.template) for s in stracks]
         for strack in stracks:
             # centered at predicted position
             center = strack.tlwh
