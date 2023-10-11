@@ -200,7 +200,8 @@ class Exp(BaseExp):
         return scheduler
 
     def get_eval_loader(self, batch_size, is_distributed, testdev=False, **kwargs):
-        from yolox.data import COCODataset, ValTransform
+        from yolox.data.datasets.coco import COCODataset
+        from yolox.data.data_augment import ValTransform
 
         valdataset = COCODataset(
             data_dir=None,
