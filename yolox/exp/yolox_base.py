@@ -78,7 +78,7 @@ class Exp(BaseExp):
         self.model.head.initialize_biases(1e-2)
         return self.model
 
-    def get_data_loader(self, batch_size, is_distributed, no_aug=False, **kwargs):
+    def get_data_loader(self, batch_size, is_distributed, no_aug=False):
         from yolox.data import (
             COCODataset,
             DataLoader,
@@ -199,7 +199,7 @@ class Exp(BaseExp):
         )
         return scheduler
 
-    def get_eval_loader(self, batch_size, is_distributed, testdev=False, **kwargs):
+    def get_eval_loader(self, batch_size, is_distributed, testdev=False):
         from yolox.data import COCODataset, ValTransform
 
         valdataset = COCODataset(
