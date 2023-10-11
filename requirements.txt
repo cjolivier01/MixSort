@@ -9,6 +9,7 @@ tqdm
 Pillow
 thop
 loguru
+pycocotools
 ninja
 tabulate
 tensorboard
