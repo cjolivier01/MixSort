@@ -59,7 +59,7 @@ class MOTEvaluator:
     """
 
     def __init__(
-        self, args, dataloader, img_size, confthre, nmsthre, num_classes):
+        self, args, dataloader, img_size, confthre, nmsthre, num_classes, online_callback: callable = None):
         """
         Args:
             dataloader (Dataloader): evaluate dataloader.
@@ -75,6 +75,7 @@ class MOTEvaluator:
         self.nmsthre = nmsthre
         self.num_classes = num_classes
         self.args = args
+        self.online_callback = online_callback
 
     def evaluate_byte(
         self,
@@ -232,7 +233,8 @@ class MOTEvaluator:
         trt_file=None,
         decoder=None,
         test_size=None,
-        result_folder=None
+        result_folder=None,
+        online_callback=None,
     ):
         """
         COCO average precision (AP) Evaluation. Iterate inference on the test dataset
@@ -318,10 +320,11 @@ class MOTEvaluator:
             model = model_trt
 
         tracker = MIXTracker(self.args)
-        ori_thresh = self.args.track_thresh
+        #ori_thresh = self.args.track_thresh
         for cur_iter, (origin_imgs, imgs, _, info_imgs, ids) in enumerate(
             progress_bar(self.dataloader)
         ):
+            # info_imgs is 4 scalar tensors: height, width, frame_id, video_id
             with torch.no_grad():
                 # init tracker
                 frame_id = info_imgs[2].item()
@@ -378,6 +381,17 @@ class MOTEvaluator:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
                         online_scores.append(t.score)
+
+                if self.online_callback is not None:
+                    self.online_callback(
+                        frame_id=frame_id,
+                        online_tlwhs=online_tlwhs,
+                        online_ids=online_ids,
+                        online_scores=online_scores,
+                        info_imgs=info_imgs,
+                        imgs=imgs,
+                        origin_imgs=origin_imgs)
+
                 # save results
                 results.append((frame_id, online_tlwhs, online_ids, online_scores))
 
