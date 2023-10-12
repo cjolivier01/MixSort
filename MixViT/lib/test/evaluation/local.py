@@ -10,19 +10,19 @@ def local_env_settings():
     settings.got_packed_results_path = ''
     settings.got_reports_path = ''
     settings.lasot_path = ''
-    settings.network_path = '/home/colivier/src/hockeymom/models/mixsort/MixViT/lib/test/networks/'    # Where tracking networks are stored.
+    settings.network_path = 'MixViT/lib/test/networks/'    # Where tracking networks are stored.
     settings.nfs_path = ''
     settings.otb_path = ''
-    settings.result_plot_path = '/home/colivier/src/hockeymom/models/mixsort/MixViT/lib/test/result_plots/'
-    settings.results_path = '/home/colivier/src/hockeymom/models/mixsort/MixViT/lib/test/tracking_results/'    # Where to store tracking results
-    settings.segmentation_path = '/home/colivier/src/hockeymom/models/mixsort/MixViT/lib/test/segmentation_results/'
+    settings.result_plot_path = 'MixViT/lib/test/result_plots/'
+    settings.results_path = 'MixViT/lib/test/tracking_results/'    # Where to store tracking results
+    settings.segmentation_path = 'MixViT/lib/test/segmentation_results/'
     settings.tn_packed_results_path = ''
     settings.tpl_path = ''
     settings.trackingnet_path = ''
     settings.uav_path = ''
     settings.vot_path = ''
     settings.youtubevos_dir = ''
-    settings.prj_dir = '/home/colivier/src/hockeymom/models/mixsort/MixViT'
+    settings.prj_dir = 'MixViT'
     settings.save_dir = ''
 
 

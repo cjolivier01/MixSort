@@ -16,7 +16,13 @@ def run_video(tracker_name, tracker_param, videofile, optional_box=None, debug=N
         tracker_param: Name of parameter file.
         debug: Debug level.
     """
-    tracker = Tracker(tracker_name, tracker_param, "video")
+    # is dataset_name just 'video'?
+    tracker_params = {
+        #"model": "/mnt/data/src/hockeymom_2/pretrained/mixsort/MixFormer_sports_train.pth.tar",
+        #"model": "MixFormer_sports_train.pth.tar",
+        "model": "MixFormer_soccernet_train.pth",
+    }
+    tracker = Tracker(tracker_name, parameter_name=tracker_param, dataset_name="video", tracker_params=tracker_params)
     tracker.run_video(videofilepath=videofile, optional_box=optional_box, debug=debug, save_results=save_results)
 
 
