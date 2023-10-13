@@ -389,8 +389,8 @@ class MOTEvaluator:
                         online_ids=online_ids,
                         online_scores=online_scores,
                         info_imgs=info_imgs,
-                        imgs=imgs,
-                        origin_imgs=origin_imgs)
+                        img=imgs,
+                        original_img=origin_imgs)
 
                 # save results
                 results.append((frame_id, online_tlwhs, online_ids, online_scores))
