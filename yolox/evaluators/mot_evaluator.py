@@ -204,6 +204,17 @@ class MOTEvaluator:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
                         online_scores.append(t.score)
+
+                if self.online_callback is not None:
+                    self.online_callback(
+                        frame_id=frame_id,
+                        online_tlwhs=online_tlwhs,
+                        online_ids=online_ids,
+                        online_scores=online_scores,
+                        info_imgs=info_imgs,
+                        img=imgs,
+                        original_img=imgs)
+
                 # save results
                 results.append((frame_id, online_tlwhs, online_ids, online_scores))
 
@@ -234,7 +245,6 @@ class MOTEvaluator:
         decoder=None,
         test_size=None,
         result_folder=None,
-        online_callback=None,
     ):
         """
         COCO average precision (AP) Evaluation. Iterate inference on the test dataset
@@ -527,6 +537,17 @@ class MOTEvaluator:
                     if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
+
+                if self.online_callback is not None:
+                    self.online_callback(
+                        frame_id=frame_id,
+                        online_tlwhs=online_tlwhs,
+                        online_ids=online_ids,
+                        online_scores=[],
+                        info_imgs=info_imgs,
+                        img=imgs,
+                        original_img=origin_imgs)
+
                 # save results
                 results.append((frame_id, online_tlwhs, online_ids))
 
@@ -671,6 +692,17 @@ class MOTEvaluator:
                     if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
+
+                if self.online_callback is not None:
+                    self.online_callback(
+                        frame_id=frame_id,
+                        online_tlwhs=online_tlwhs,
+                        online_ids=online_ids,
+                        online_scores=[],
+                        info_imgs=info_imgs,
+                        img=imgs,
+                        original_img=origin_imgs)
+
                 # save results
                 results.append((frame_id, online_tlwhs, online_ids))
 
@@ -796,6 +828,17 @@ class MOTEvaluator:
                 if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
                     online_tlwhs.append(tlwh)
                     online_ids.append(tid)
+
+            if self.online_callback is not None:
+                self.online_callback(
+                    frame_id=frame_id,
+                    online_tlwhs=online_tlwhs,
+                    online_ids=online_ids,
+                    online_scores=[],
+                    info_imgs=info_imgs,
+                    img=imgs,
+                    original_img=imgs)
+
             # save results
             results.append((frame_id, online_tlwhs, online_ids))
 
@@ -919,6 +962,17 @@ class MOTEvaluator:
                 if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
                     online_tlwhs.append(tlwh)
                     online_ids.append(tid)
+
+            if self.online_callback is not None:
+                self.online_callback(
+                    frame_id=frame_id,
+                    online_tlwhs=online_tlwhs,
+                    online_ids=online_ids,
+                    online_scores=[],
+                    info_imgs=info_imgs,
+                    img=imgs,
+                    original_img=imgs)
+
             # save results
             results.append((frame_id, online_tlwhs, online_ids))
 
@@ -1043,6 +1097,17 @@ class MOTEvaluator:
                     online_tlwhs.append(tlwh)
                     online_ids.append(tid)
                     online_scores.append(t.score)
+
+            if self.online_callback is not None:
+                self.online_callback(
+                    frame_id=frame_id,
+                    online_tlwhs=online_tlwhs,
+                    online_ids=online_ids,
+                    online_scores=online_scores,
+                    info_imgs=info_imgs,
+                    img=imgs,
+                    original_img=imgs)
+
             # save results
             results.append((frame_id, online_tlwhs, online_ids, online_scores))
 
