@@ -141,3 +141,4 @@ docs/api
 *.engine
 events.out.tfevents*
 YOLOX_outputs
+YOLOX_outputs
