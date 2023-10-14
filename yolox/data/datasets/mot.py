@@ -82,9 +82,9 @@ class MOTDataset(Dataset):
         num_objs = len(objs)
 
         res = np.zeros((num_objs, 6))
-
         for ix, obj in enumerate(objs):
-            cls = self.class_ids.index(obj["category_id"])
+            catedory_id = obj["category_id"]
+            cls = self.class_ids.index(catedory_id)
             res[ix, 0:4] = obj["clean_bbox"]
             res[ix, 4] = cls
             res[ix, 5] = obj["track_id"]

@@ -19,6 +19,8 @@ if __name__ == '__main__':
     if not os.path.exists(OUT_PATH):
         os.makedirs(OUT_PATH)
 
+    seen_categories = set()
+
     for split in SPLITS:
         if split == "test":
             data_path = os.path.join(DATA_PATH, 'test')
@@ -26,7 +28,7 @@ if __name__ == '__main__':
             data_path = os.path.join(DATA_PATH, 'train')
         out_path = os.path.join(OUT_PATH, '{}.json'.format(split))
         out = {'images': [], 'annotations': [], 'videos': [],
-               'categories': [{'id': 1, 'name': 'pedestrian'}]}
+               'categories': [{'id': -1, 'name': 'ignore'},{'id': 1, 'name': 'pedestrian'}]}
         seqs = os.listdir(data_path)
         image_cnt = 0
         ann_cnt = 0
@@ -99,6 +101,7 @@ if __name__ == '__main__':
                     dout.close()
 
                 print('{} ann images'.format(int(anns[:, 0].max())))
+
                 for i in range(anns.shape[0]):
                     frame_id = int(anns[i][0])
                     if frame_id - 1 < image_range[0] or frame_id - 1 > image_range[1]:
@@ -122,6 +125,11 @@ if __name__ == '__main__':
                                 tid_last = track_id
                     else:
                         category_id = 1
+
+                    if category_id not in seen_categories:
+                        print(f"Category: {category_id}")
+                        seen_categories.add(category_id)
+
                     ann = {'id': ann_cnt,
                            'category_id': category_id,
                            'image_id': image_cnt + frame_id,
