@@ -7,7 +7,7 @@ import cv2
 # Use the same script for MOT16
 DATA_PATH = 'datasets/hockeyTrackingDataset'
 OUT_PATH = os.path.join(DATA_PATH, 'annotations')
-#SPLITS = ['train_half', 'val_half', 'train', 'test']  # --> split training data to train_half and val_half.
+#SPLITS = ['train_half', 'val-_half', 'train', 'test']  # --> split training data to train_half and val_half.
 SPLITS = ['train', 'test']  # --> split training data to train_half and val_half.
 HALF_VIDEO = False
 CREATE_SPLITTED_ANN = False
@@ -28,7 +28,7 @@ if __name__ == '__main__':
             data_path = os.path.join(DATA_PATH, 'train')
         out_path = os.path.join(OUT_PATH, '{}.json'.format(split))
         out = {'images': [], 'annotations': [], 'videos': [],
-               'categories': [{'id': -1, 'name': 'ignore'},{'id': 1, 'name': 'pedestrian'}]}
+               'categories': [{'id': 1, 'name': 'pedestrian'}]}
         seqs = os.listdir(data_path)
         image_cnt = 0
         ann_cnt = 0
@@ -45,8 +45,11 @@ if __name__ == '__main__':
             seq_path = os.path.join(data_path, seq)
             img_path = os.path.join(seq_path, 'img1')
             ann_path = os.path.join(seq_path, 'gt.txt')
-            if not os.path.exists(img_path):
-                print(f"Path does not exist (skipping): {img_path}")
+            # if not os.path.exists(img_path):
+            #     print(f"Path does not exist (skipping): {img_path}")
+            #     continue
+            if not os.path.exists(ann_path):
+                print(f"Annotation path does not exist (skipping): {ann_path}")
                 continue
             images = os.listdir(img_path)
             num_images = len([image for image in images if 'jpg' in image])  # half and half
@@ -68,10 +71,11 @@ if __name__ == '__main__':
                               'prev_image_id': image_cnt + i if i > 0 else -1,  # image number in the entire training set.
                               'next_image_id': image_cnt + i + 2 if i < num_images - 1 else -1,
                               'video_id': video_cnt,
-                              'height': height, 'width': width}
+                              'height': height, 'width': width,
+                              }
                 out['images'].append(image_info)
             print('{}: {} images'.format(seq, num_images))
-            if split != 'test':
+            if split != 'test' or True:
                 det_path = os.path.join(seq_path, 'det/det.txt')
                 anns = np.loadtxt(ann_path, dtype=np.float32, delimiter=',')
                 if CREATE_SPLITTED_ANN and ('half' in split):
@@ -109,6 +113,7 @@ if __name__ == '__main__':
                     track_id = int(anns[i][1])
                     cat_id = int(anns[i][7])
                     ann_cnt += 1
+                    ignore = 0
                     if not ('15' in DATA_PATH):
                         #if not (float(anns[i][8]) >= 0.25):  # visibility.
                             #continue
@@ -117,7 +122,8 @@ if __name__ == '__main__':
                         if int(anns[i][7]) in [3, 4, 5, 6, 9, 10, 11]:  # Non-person
                             continue
                         if int(anns[i][7]) in [2, 7, 8, 12]:  # Ignored person
-                            category_id = -1
+                            category_id = 1
+                            ignore = 1
                         else:
                             category_id = 1  # pedestrian(non-static)
                             if not track_id == tid_last:
@@ -125,6 +131,7 @@ if __name__ == '__main__':
                                 tid_last = track_id
                     else:
                         category_id = 1
+                    assert category_id != -1
 
                     if category_id not in seen_categories:
                         print(f"Category: {category_id}")
@@ -137,7 +144,9 @@ if __name__ == '__main__':
                            'bbox': anns[i][2:6].tolist(),
                            'conf': float(anns[i][6]),
                            'iscrowd': 0,
-                           'area': float(anns[i][4] * anns[i][5])}
+                           'area': float(anns[i][4] * anns[i][5]),
+                           "ignore": ignore,
+                        }
                     out['annotations'].append(ann)
             image_cnt += num_images
             print(tid_curr, tid_last)
