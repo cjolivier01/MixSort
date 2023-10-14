@@ -369,6 +369,8 @@ class MOTEvaluator:
                     outputs = decoder(outputs, dtype=outputs.type())
 
                 outputs = postprocess(outputs, self.num_classes, self.confthre, self.nmsthre)
+                if outputs and outputs[0] is not None:
+                    print(f" >>> {len(outputs)} outputs")
 
                 if is_time_record:
                     infer_end = time_synchronized()
@@ -401,6 +403,7 @@ class MOTEvaluator:
                         info_imgs=info_imgs,
                         img=imgs,
                         original_img=origin_imgs)
+                    continue
 
                 # save results
                 results.append((frame_id, online_tlwhs, online_ids, online_scores))
@@ -413,13 +416,14 @@ class MOTEvaluator:
                 result_filename = os.path.join(result_folder, '{}.txt'.format(video_names[video_id]))
                 write_results(result_filename, results)
 
-        statistics = torch.cuda.FloatTensor([inference_time, track_time, n_samples])
-        if distributed:
-            data_list = gather(data_list, dst=0)
-            data_list = list(itertools.chain(*data_list))
-            torch.distributed.reduce(statistics, dst=0)
+        if not self.online_callback:
+            statistics = torch.cuda.FloatTensor([inference_time, track_time, n_samples])
+            if distributed:
+                data_list = gather(data_list, dst=0)
+                data_list = list(itertools.chain(*data_list))
+                torch.distributed.reduce(statistics, dst=0)
 
-        eval_results = self.evaluate_prediction(data_list, statistics)
+            eval_results = self.evaluate_prediction(data_list, statistics)
         synchronize()
         return eval_results
 
