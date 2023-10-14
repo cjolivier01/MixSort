@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from pycocotools.coco import COCO
+from typing import Dict
 
 import os
 import torch
@@ -55,12 +56,17 @@ class MOTDataset(Dataset):
     def _load_coco_annotations(self):
         return [self.load_anno_from_ids(_ids) for _ids in self.ids]
 
+    def _frame_id_video_id(self, im_ann: Dict):
+        return (
+            im_ann["frame_id"] if "frame_id" in im_ann else im_ann["id"],
+            im_ann["video_id"] if "video_id" in im_ann else 1
+        )
+
     def load_anno_from_ids(self, id_):
         im_ann = self.coco.loadImgs(id_)[0]
         width = im_ann["width"]
         height = im_ann["height"]
-        frame_id = im_ann["frame_id"]
-        video_id = im_ann["video_id"]
+        frame_id, video_id = self._frame_id_video_id(im_ann)
         anno_ids = self.coco.getAnnIds(imgIds=[int(id_)], iscrowd=False)
         annotations = self.coco.loadAnns(anno_ids)
         objs = []

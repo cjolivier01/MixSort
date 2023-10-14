@@ -17,6 +17,8 @@ from yolox.sort_tracker.sort import Sort
 from yolox.deepsort_tracker.deepsort import DeepSort
 from yolox.motdt_tracker.motdt_tracker import OnlineTracker
 
+from hmlib.tracking_utils.timer import Timer
+
 import contextlib
 import io
 import os
@@ -76,6 +78,7 @@ class MOTEvaluator:
         self.num_classes = num_classes
         self.args = args
         self.online_callback = online_callback
+        self.timer = Timer()
 
     def evaluate_byte(
         self,
@@ -313,7 +316,7 @@ class MOTEvaluator:
         data_list = []
         results = []
         video_names = defaultdict()
-        progress_bar = tqdm if is_main_process() else iter
+        progress_bar = tqdm if is_main_process() and not self.online_callback else iter
 
         inference_time = 0
         track_time = 0
@@ -370,7 +373,8 @@ class MOTEvaluator:
 
                 outputs = postprocess(outputs, self.num_classes, self.confthre, self.nmsthre)
                 if outputs and outputs[0] is not None:
-                    print(f" >>> {len(outputs)} outputs")
+                    print(f" >>> {outputs[0].shape[0]} detections")
+                    assert outputs[0].shape[1] == 7  # Yolox output has 7 fields?
 
                 if is_time_record:
                     infer_end = time_synchronized()
