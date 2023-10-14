@@ -91,7 +91,7 @@ class Exp(MyExp):
 
         return train_loader
 
-    def get_eval_loader(self, batch_size, is_distributed, testdev=False):
+    def get_eval_loader(self, batch_size, is_distributed, testdev=False, return_origin_img=True):
         from yolox.data import MOTDataset, ValTransform
 
         valdataset = MOTDataset(
@@ -103,6 +103,7 @@ class Exp(MyExp):
                 rgb_means=(0.485, 0.456, 0.406),
                 std=(0.229, 0.224, 0.225),
             ),
+            return_origin_img=return_origin_img,
         )
 
         if is_distributed:
