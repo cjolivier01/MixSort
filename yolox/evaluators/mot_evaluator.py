@@ -388,6 +388,8 @@ class MOTEvaluator:
                 online_tlwhs = []
                 online_ids = []
                 online_scores = []
+                if online_targets:
+                    print(f"{len(online_targets)} targets")
                 for t in online_targets:
                     tlwh = t.tlwh
                     tid = t.track_id
@@ -396,19 +398,21 @@ class MOTEvaluator:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
                         online_scores.append(t.score)
+                    else:
+                        print("Skipping target")
 
-                if not online_tlwhs:
-                    for index, det in enumerate(detections):
-                        tlwh = det.tlwh
-                        #assert det.track_id == 0
-                        tid = -det.track_id
-                        #tid = -index
-                        #vertical = tlwh[2] / tlwh[3] > 1.6
-                        vertical = False
-                        if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
-                            online_tlwhs.append(tlwh)
-                            online_ids.append(tid)
-                            online_scores.append(det.score)
+                # if not online_tlwhs:
+                #     for index, det in enumerate(detections):
+                #         tlwh = det.tlwh
+                #         #assert det.track_id == 0
+                #         tid = -det.track_id
+                #         #tid = -index
+                #         #vertical = tlwh[2] / tlwh[3] > 1.6
+                #         vertical = False
+                #         if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
+                #             online_tlwhs.append(tlwh)
+                #             online_ids.append(tid)
+                #             online_scores.append(det.score)
 
 
                 if self.online_callback is not None:
