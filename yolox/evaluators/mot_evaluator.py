@@ -17,8 +17,6 @@ from yolox.sort_tracker.sort import Sort
 from yolox.deepsort_tracker.deepsort import DeepSort
 from yolox.motdt_tracker.motdt_tracker import OnlineTracker
 
-from hmlib.tracking_utils.timer import Timer
-
 import contextlib
 import io
 import os
@@ -78,7 +76,6 @@ class MOTEvaluator:
         self.num_classes = num_classes
         self.args = args
         self.online_callback = online_callback
-        self.timer = Timer()
 
     def evaluate_byte(
         self,
@@ -135,7 +132,8 @@ class MOTEvaluator:
 
         tracker = BYTETracker(self.args)
         ori_thresh = self.args.track_thresh
-        for cur_iter, (imgs, _, info_imgs, ids) in enumerate(
+        for cur_iter, (origin_imgs, imgs, _, info_imgs, ids) in enumerate(
+        #for cur_iter, (imgs, _, info_imgs, ids) in enumerate(
             progress_bar(self.dataloader)
         ):
             with torch.no_grad():
@@ -216,7 +214,7 @@ class MOTEvaluator:
                         online_scores=online_scores,
                         info_imgs=info_imgs,
                         img=imgs,
-                        original_img=imgs)
+                        original_img=origin_imgs)
 
                 # save results
                 results.append((frame_id, online_tlwhs, online_ids, online_scores))
@@ -368,6 +366,7 @@ class MOTEvaluator:
 
                 with torch.no_grad():
                     outputs = model(imgs)
+                    #print(outputs)
                 if decoder is not None:
                     outputs = decoder(outputs, dtype=outputs.type())
 
@@ -385,7 +384,7 @@ class MOTEvaluator:
 
             # run tracking
             if outputs[0] is not None:
-                online_targets = tracker.update(outputs[0], info_imgs, self.img_size, origin_imgs.squeeze(0).cuda())
+                online_targets, detections = tracker.update(outputs[0], info_imgs, self.img_size, origin_imgs.squeeze(0).cuda())
                 online_tlwhs = []
                 online_ids = []
                 online_scores = []
@@ -397,6 +396,20 @@ class MOTEvaluator:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
                         online_scores.append(t.score)
+
+                if not online_tlwhs:
+                    for index, det in enumerate(detections):
+                        tlwh = det.tlwh
+                        #assert det.track_id == 0
+                        tid = -det.track_id
+                        #tid = -index
+                        #vertical = tlwh[2] / tlwh[3] > 1.6
+                        vertical = False
+                        if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
+                            online_tlwhs.append(tlwh)
+                            online_ids.append(tid)
+                            online_scores.append(det.score)
+
 
                 if self.online_callback is not None:
                     self.online_callback(
@@ -420,14 +433,13 @@ class MOTEvaluator:
                 result_filename = os.path.join(result_folder, '{}.txt'.format(video_names[video_id]))
                 write_results(result_filename, results)
 
-        if not self.online_callback:
-            statistics = torch.cuda.FloatTensor([inference_time, track_time, n_samples])
-            if distributed:
-                data_list = gather(data_list, dst=0)
-                data_list = list(itertools.chain(*data_list))
-                torch.distributed.reduce(statistics, dst=0)
+        statistics = torch.cuda.FloatTensor([inference_time, track_time, n_samples])
+        if distributed:
+            data_list = gather(data_list, dst=0)
+            data_list = list(itertools.chain(*data_list))
+            torch.distributed.reduce(statistics, dst=0)
 
-            eval_results = self.evaluate_prediction(data_list, statistics)
+        eval_results = self.evaluate_prediction(data_list, statistics)
         synchronize()
         return eval_results
 

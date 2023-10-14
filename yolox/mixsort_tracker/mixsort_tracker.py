@@ -426,7 +426,8 @@ class MIXTracker(object):
         max_iou = np.array(max_iou)
 
         remain_inds = scores > self.args.track_thresh
-        inds_low = scores > 0.1
+        inds_low = scores > self.args.track_thresh_low
+        #inds_low = scores > 0.1
         inds_high = scores < self.args.track_thresh
 
         inds_second = np.logical_and(inds_low, inds_high)
@@ -578,7 +579,7 @@ class MIXTracker(object):
         # get scores of lost tracks
         output_stracks = [track for track in self.tracked_stracks if track.is_activated]
         self.last_img = img
-        return output_stracks
+        return output_stracks, detections
 
 
 def joint_stracks(tlista, tlistb):

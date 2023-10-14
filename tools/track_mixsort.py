@@ -103,6 +103,7 @@ def make_parser():
     parser.add_argument("--seed", default=None, type=int, help="eval seed")
     # tracking args
     parser.add_argument("--track_thresh", type=float, default=0.6, help="tracking confidence threshold")
+    parser.add_argument("--track_thresh_low", type=float, default=0.1, help="tracking confidence threshold lower bound")
     parser.add_argument("--track_buffer", type=int, default=30, help="the frames for keep lost tracks")
     parser.add_argument("--match_thresh", type=float, default=0.9, help="matching threshold for tracking")
     parser.add_argument("--iou_thresh",type=float,default=0.3)
@@ -113,7 +114,7 @@ def make_parser():
     parser.add_argument("--config",type=str,default='track')
     parser.add_argument("--alpha",type=float,default=0.6,help='fuse parameter')
     parser.add_argument("--radius",type=int,default=0,help='radius for computing similarity')
-    
+
     parser.add_argument("--iou_only",dest="iou_only",default=False, action="store_true",help='only use iou for similarity')
     return parser
 
@@ -122,7 +123,7 @@ def compare_dataframes(gts, ts):
     accs = []
     names = []
     for k, tsacc in ts.items():
-        if k in gts:            
+        if k in gts:
             logger.info('Comparing {}...'.format(k))
             accs.append(mm.utils.compare_to_groundtruth(gts[k], tsacc, 'iou', distth=0.5))
             names.append(k)
@@ -249,4 +250,4 @@ if __name__ == "__main__":
         dist_url=args.dist_url,
         args=(exp, args, num_gpu),
     )
-    
+
