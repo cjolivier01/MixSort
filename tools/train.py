@@ -38,6 +38,8 @@ def get_first_hostname(nodelist):
 def get_dist_url(hostname, port=29500, protocol='tcp'):
     """Generate a PyTorch dist-url using the given hostname and port."""
     ip = socket.gethostbyname(hostname)
+    os.environ["MASTER_PORT"] = f"{port}"
+    os.environ["MASTER_ADDR"] = ip
     return f"{protocol}://{ip}:{port}"
 
 
@@ -51,13 +53,10 @@ def get_default_dist_url():
     return None
 
 
-def get_dist_url():
-    host = os.environ.get("")
-    return None
-
-
 def get_local_rank():
-    return int(os.environ.get("SLURM_LOCALID", "0"))
+    lr = int(os.environ.get("SLURM_LOCALID", "0"))
+    os.environ["LOCAL_RANK"] = str(lr)
+    return lr
 
 
 def get_devices():
@@ -67,11 +66,16 @@ def get_devices():
 
 
 def get_machine_rank():
-    return int(os.environ("SLURM_PROCID", "0"))
+    return int(os.environ.get("SLURM_PROCID", "0"))
 
 
 def get_world_size():
-    return int(os.environ("SLURM_NTASKS", "1"))
+    return int(os.environ.get("SLURM_NTASKS", "1"))
+
+
+def get_dist_backend():
+    return "nccl"
+    #return "gloo"
 
 
 def make_parser():
@@ -81,7 +85,7 @@ def make_parser():
 
     # distributed
     parser.add_argument(
-        "--dist-backend", default="nccl", type=str, help="distributed backend"
+        "--dist-backend", default=get_dist_backend(), type=str, help="distributed backend"
     )
     parser.add_argument(
         "--dist-url",
@@ -171,9 +175,12 @@ if __name__ == "__main__":
     if not args.experiment_name:
         args.experiment_name = exp.exp_name
 
-    num_gpu = torch.cuda.device_count() if args.devices is None else args.devices
-    print(f"num_gpu={num_gpu}")
-    assert num_gpu <= torch.cuda.device_count()
+    if "SLURM_JOB_NODELIST" in  os.environ:
+        num_gpu = 1
+    else:
+        num_gpu = torch.cuda.device_count() if args.devices is None else args.devices
+        print(f"num_gpu={num_gpu}")
+        assert num_gpu <= torch.cuda.device_count()
 
     launch(
         main,

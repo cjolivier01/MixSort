@@ -59,10 +59,8 @@ def launch(
     world_size = num_machines * num_gpus_per_machine
     if world_size > 1:
         if int(os.environ.get("WORLD_SIZE", "1")) > 1:
-            dist_url = "{}:{}".format(
-                os.environ.get("MASTER_ADDR", None),
-                os.environ.get("MASTER_PORT", "None"),
-            )
+            if not dist_url:
+                dist_url = f"{os.environ.get('MASTER_ADDR', None)}:{os.environ.get('MASTER_PORT', None)}"
             local_rank = int(os.environ.get("LOCAL_RANK", "0"))
             world_size = int(os.environ.get("WORLD_SIZE", "1"))
             _distributed_worker(
@@ -128,8 +126,10 @@ def launch_by_subprocess(
 
     # set PyTorch distributed related environmental variables
     current_env = os.environ.copy()
-    current_env["MASTER_ADDR"] = dist_url
-    current_env["MASTER_PORT"] = str(port)
+    if "MASTER_ADDR" not in current_env:
+        current_env["MASTER_ADDR"] = dist_url
+    if "MASTER_PORT" not in current_env:
+        current_env["MASTER_PORT"] = str(port)
     current_env["WORLD_SIZE"] = str(world_size)
     assert num_gpus_per_machine <= torch.cuda.device_count()
 
@@ -180,7 +180,11 @@ def _distributed_worker(
         torch.cuda.is_available()
     ), "cuda is not available. Please check your installation."
     configure_nccl()
-    global_rank = machine_rank * num_gpus_per_machine + local_rank
+    if not dist_url:
+        global_rank = machine_rank * num_gpus_per_machine + local_rank
+    else:
+        assert  num_gpus_per_machine == 1
+        global_rank = machine_rank
     logger.info("Rank {} initialization finished.".format(global_rank))
     try:
         dist.init_process_group(

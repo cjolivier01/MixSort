@@ -3,6 +3,7 @@ numpy==1.22.3
 #torch>=-1.7
 opencv_python
 loguru
+psutil
 scikit-image
 einops
 jpeg4py
