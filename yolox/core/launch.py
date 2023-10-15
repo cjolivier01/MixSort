@@ -180,11 +180,7 @@ def _distributed_worker(
         torch.cuda.is_available()
     ), "cuda is not available. Please check your installation."
     configure_nccl()
-    if not dist_url:
-        global_rank = machine_rank * num_gpus_per_machine + local_rank
-    else:
-        assert  num_gpus_per_machine == 1
-        global_rank = machine_rank
+    global_rank = machine_rank * num_gpus_per_machine + local_rank
     logger.info("Rank {} initialization finished.".format(global_rank))
     try:
         dist.init_process_group(
