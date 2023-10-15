@@ -1,6 +1,9 @@
+import os
 from loguru import logger
 
+import socket
 import torch
+import re
 import torch.backends.cudnn as cudnn
 
 from yolox.core import Trainer, launch
@@ -9,6 +12,66 @@ from yolox.exp import get_exp
 import argparse
 import random
 import warnings
+
+def get_first_hostname(nodelist):
+    """Extract the first hostname from a SLURM nodelist string."""
+    # Extract the root hostname and range (if present)
+    match = re.match(r"([\w\-]+?)\[(\d+-\d+)?\]", nodelist)
+    if match:
+        prefix, rng = match.groups()
+        if rng:
+            # If a range is present, extract the first number
+            start = int(rng.split("-")[0])
+        else:
+            start = None
+    else:
+        # If no range is present, the nodelist is the hostname
+        prefix = nodelist
+        start = None
+
+    # Construct the first hostname
+    if start is not None:
+        return f"{prefix}{start}"
+    else:
+        return prefix
+
+def get_dist_url(hostname, port=29500, protocol='tcp'):
+    """Generate a PyTorch dist-url using the given hostname and port."""
+    ip = socket.gethostbyname(hostname)
+    return f"{protocol}://{ip}:{port}"
+
+
+def get_default_dist_url():
+    nodelist = os.environ.get("SLURM_JOB_NODELIST", None)
+    if not nodelist:
+        return None
+    master = get_first_hostname(nodelist)
+    if master:
+        return get_dist_url(master)
+    return None
+
+
+def get_dist_url():
+    host = os.environ.get("")
+    return None
+
+
+def get_local_rank():
+    return int(os.environ.get("SLURM_LOCALID", "0"))
+
+
+def get_devices():
+    if "SLURM_LOCALID" in os.environ:
+        return get_local_rank()
+    return None
+
+
+def get_machine_rank():
+    return int(os.environ("SLURM_PROCID", "0"))
+
+
+def get_world_size():
+    return int(os.environ("SLURM_NTASKS", "1"))
 
 
 def make_parser():
@@ -22,7 +85,7 @@ def make_parser():
     )
     parser.add_argument(
         "--dist-url",
-        default=None,
+        default=get_default_dist_url(),
         type=str,
         help="url used to set up distributed training",
     )
@@ -31,7 +94,7 @@ def make_parser():
         "-d", "--devices", default=None, type=int, help="device for training"
     )
     parser.add_argument(
-        "--local_rank", default=0, type=int, help="local rank for dist training"
+        "--local_rank", default=get_local_rank(), type=int, help="local rank for dist training"
     )
     parser.add_argument(
         "-f",
@@ -52,10 +115,10 @@ def make_parser():
         help="resume training start epoch",
     )
     parser.add_argument(
-        "--num_machines", default=1, type=int, help="num of node for training"
+        "--num_machines", default=get_world_size(), type=int, help="num of node for training"
     )
     parser.add_argument(
-        "--machine_rank", default=0, type=int, help="node rank for multi-node training"
+        "--machine_rank", default=get_machine_rank(), type=int, help="node rank for multi-node training"
     )
     parser.add_argument(
         "--fp16",
