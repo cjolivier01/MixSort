@@ -1,6 +1,7 @@
 import os
 from loguru import logger
 
+import time
 import socket
 import torch
 import re
@@ -19,7 +20,7 @@ def _print_slurm_environment():
             if key.startswith("SLURM_"):
                 print(f"{key}={val}")
 
-_print_slurm_environment()
+#_print_slurm_environment()
 #exit(0)
 
 node_lists = [
@@ -37,6 +38,30 @@ node_lists = [
     "clip-f-5,clip-f-[15,17]",
     "clip-f-[5,9],clip-f-175",
 ]
+
+
+def set_slurm_env_variables(node_list, tasks_per_node):
+    """
+    Set virtual Slurm environment variables based on the node list and tasks per node.
+    
+    Args:
+    - node_list (list of str): List of node names
+    - tasks_per_node (int): Number of tasks per node
+    """
+    # Setting SLURM_JOB_NODELIST and SLURM_TASKS_PER_NODE
+    os.environ['SLURM_JOB_NODELIST'] = ','.join(node_list)
+    os.environ['SLURM_TASKS_PER_NODE'] = str(tasks_per_node)
+
+    # Setting SLURM_JOB_NUM_NODES
+    os.environ['SLURM_JOB_NUM_NODES'] = str(len(node_list))
+
+    # Setting SLURM_NNODES to be the same as SLURM_JOB_NUM_NODES (for some scripts)
+    os.environ['SLURM_NNODES'] = os.environ['SLURM_JOB_NUM_NODES']
+
+    # Setting SLURM_NTASKS as total number of tasks
+    os.environ['SLURM_NTASKS'] = str(len(node_list) * tasks_per_node)
+
+    # Mock other possible Slurm environment variables as needed...
 
 def add_string_numbers(a: str, b: str) -> str:
     # Step 2: Make the strings of equal length by prefixing zeros
@@ -118,11 +143,9 @@ def slurm_parse_list(s):
     return lst
 
 
-for s in node_lists:
-    print(s)
-    print(slurm_parse_list(s))
-
-exit(0)
+# for s in node_lists:
+#     print(s)
+#     print(slurm_parse_list(s))
 
 def get_first_hostname(nodelist):
     nodelist = slurm_parse_list(os.environ.get("SLURM_STEP_NODELIST", ""))
@@ -156,23 +179,19 @@ def get_local_rank():
     return lr
 
 
-def get_devices():
-    if "SLURM_LOCALID" in os.environ:
-        return get_local_rank()
-    return None
-
-
 def get_machine_rank():
     return int(os.environ.get("SLURM_NODEID", "0"))
 
 
 def get_num_machines():
-    return int(os.environ.get("SLURM_NNODES", "1"))
+    num_machines = int(os.environ.get("SLURM_NNODES", "1"))
+    os.environ["WORLD_SIZE"] = str(num_machines)
+    return num_machines
 
 
 def get_dist_backend():
-    return "nccl"
-    # return "gloo"
+    # return "nccl"
+    return "gloo"
 
 
 def make_parser():
@@ -223,7 +242,7 @@ def make_parser():
     )
     parser.add_argument(
         "--num_machines",
-        default=get_world_size(),
+        default=get_num_machines(),
         type=int,
         help="num of node for training",
     )
@@ -285,9 +304,12 @@ if __name__ == "__main__":
         args.experiment_name = exp.exp_name
 
     num_gpu = torch.cuda.device_count() if args.devices is None else args.devices
-    print(f"num_gpu={num_gpu}")
+    num_gpu = min(num_gpu, 4)
     assert num_gpu <= torch.cuda.device_count()
-
+    time.sleep(args.machine_rank)
+    #args.num_machines = 4
+    print(f"machine rank: {args.machine_rank}, hostname={socket.gethostname()}, ngpu={num_gpu}, dist_url={args.dist_url}")
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
     launch(
         main,
         num_gpu,

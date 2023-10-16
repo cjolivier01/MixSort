@@ -5,6 +5,11 @@
 
 #  srun --tasks-per-node 8 --nodelist $RUN_PARTITION_SERVERS -p sw-mpu --cpus-per-task 12 \
 
-srun --tasks-per-node 1 -N 4 -p sw-mpu --exclusive \
-    ./p tools/train.py -f exps/example/mot/yolox_x_hockey.py -d 8 -b 64 --fp16 -c pretrained/yolox_x_sports_train.pth
+#--nodelist mojo-ep2-r02u47 \
 
+srun --tasks-per-node 1 \
+  -N 2 \
+  --cpus-per-task=90 \
+  -p sw-mpu  \
+  --exclusive \
+    ./p tools/train.py -f exps/example/mot/yolox_x_hockey.py -d 8 -b 32 --fp16 -c ./YOLOX_outputs/yolox_x_hockey/latest_ckpt.pth.tar
