@@ -156,6 +156,8 @@ def get_first_hostname(nodelist):
 
 
 def get_dist_url(hostname, port=29500, protocol="tcp"):
+    if get_num_machines() < 2:
+        return None
     """Generate a PyTorch dist-url using the given hostname and port."""
     ip = socket.gethostbyname(hostname)
     os.environ["MASTER_PORT"] = f"{port}"
@@ -175,7 +177,7 @@ def get_default_dist_url():
 
 def get_local_rank():
     lr = int(os.environ.get("SLURM_LOCALID", "0"))
-    os.environ["LOCAL_RANK"] = str(lr)
+    #os.environ["LOCAL_RANK"] = str(lr)
     return lr
 
 
@@ -185,13 +187,13 @@ def get_machine_rank():
 
 def get_num_machines():
     num_machines = int(os.environ.get("SLURM_NNODES", "1"))
-    os.environ["WORLD_SIZE"] = str(num_machines)
+    #os.environ["WORLD_SIZE"] = str(num_machines)
     return num_machines
 
 
 def get_dist_backend():
-    # return "nccl"
-    return "gloo"
+    return "nccl"
+    #return "gloo"
 
 
 def make_parser():
@@ -308,7 +310,7 @@ if __name__ == "__main__":
     #assert num_gpu <= torch.cuda.device_count()
     #time.sleep(args.machine_rank)
     #args.num_machines = 4
-    #print(f"machine rank: {args.machine_rank}, hostname={socket.gethostname()}, ngpu={num_gpu}, dist_url={args.dist_url}")
+    print(f"machine rank: {args.machine_rank}, hostname={socket.gethostname()}, ngpu={num_gpu}, dist_url={args.dist_url}")
     #os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
     launch(
         main,
