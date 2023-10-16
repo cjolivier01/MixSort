@@ -13,6 +13,7 @@ import argparse
 import random
 import warnings
 
+
 def get_first_hostname(nodelist):
     """Extract the first hostname from a SLURM nodelist string."""
     # Extract the root hostname and range (if present)
@@ -35,7 +36,8 @@ def get_first_hostname(nodelist):
     else:
         return prefix
 
-def get_dist_url(hostname, port=29500, protocol='tcp'):
+
+def get_dist_url(hostname, port=29500, protocol="tcp"):
     """Generate a PyTorch dist-url using the given hostname and port."""
     ip = socket.gethostbyname(hostname)
     os.environ["MASTER_PORT"] = f"{port}"
@@ -75,7 +77,7 @@ def get_world_size():
 
 def get_dist_backend():
     return "nccl"
-    #return "gloo"
+    # return "gloo"
 
 
 def make_parser():
@@ -85,7 +87,10 @@ def make_parser():
 
     # distributed
     parser.add_argument(
-        "--dist-backend", default=get_dist_backend(), type=str, help="distributed backend"
+        "--dist-backend",
+        default=get_dist_backend(),
+        type=str,
+        help="distributed backend",
     )
     parser.add_argument(
         "--dist-url",
@@ -98,7 +103,10 @@ def make_parser():
         "-d", "--devices", default=None, type=int, help="device for training"
     )
     parser.add_argument(
-        "--local_rank", default=get_local_rank(), type=int, help="local rank for dist training"
+        "--local_rank",
+        default=get_local_rank(),
+        type=int,
+        help="local rank for dist training",
     )
     parser.add_argument(
         "-f",
@@ -119,10 +127,16 @@ def make_parser():
         help="resume training start epoch",
     )
     parser.add_argument(
-        "--num_machines", default=get_world_size(), type=int, help="num of node for training"
+        "--num_machines",
+        default=get_world_size(),
+        type=int,
+        help="num of node for training",
     )
     parser.add_argument(
-        "--machine_rank", default=get_machine_rank(), type=int, help="node rank for multi-node training"
+        "--machine_rank",
+        default=get_machine_rank(),
+        type=int,
+        help="node rank for multi-node training",
     )
     parser.add_argument(
         "--fp16",
@@ -175,12 +189,9 @@ if __name__ == "__main__":
     if not args.experiment_name:
         args.experiment_name = exp.exp_name
 
-    if "SLURM_JOB_NODELIST" in  os.environ:
-        num_gpu = 1
-    else:
-        num_gpu = torch.cuda.device_count() if args.devices is None else args.devices
-        print(f"num_gpu={num_gpu}")
-        assert num_gpu <= torch.cuda.device_count()
+    num_gpu = torch.cuda.device_count() if args.devices is None else args.devices
+    print(f"num_gpu={num_gpu}")
+    assert num_gpu <= torch.cuda.device_count()
 
     launch(
         main,
