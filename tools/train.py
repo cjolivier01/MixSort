@@ -13,6 +13,75 @@ import argparse
 import random
 import warnings
 
+node_lists = [
+    "clip-g1-[0-1],clip-g2-[2-3]",
+    "clip-g1-0,clip-g2-0",
+    "clip-g1-0,clip-g2-1",
+    "clip-g1-1",
+    "clip-a-[1,3,5]",
+    "clip-b-[1-3,5]",
+    "clip-c-[1-3,5,9-12]",
+    "clip-d-[5,9-12]",
+    "clip-e-[5,9],clip-e-[15-19]",
+    "clip-f-[5,9],clip-f-[15,17]",
+    "clip-f-5,clip-f-[15,17]",
+    "clip-f-[5,9],clip-f-175",
+]
+
+
+def slurm_parse_int(s):
+    for i, c in enumerate(s):
+        if c not in "0123456789":
+            return int(s[:i]), s[i:]
+    return int(s), ""
+
+
+def slurm_parse_brackets(s):
+    # parse a "bracket" expression (including closing ']')
+    lst = []
+    while len(s) > 0:
+        if s[0] == ",":
+            s = s[1:]
+            continue
+        if s[0] == "]":
+            return lst, s[1:]
+        a, s = slurm_parse_int(s)
+        assert len(s) > 0, f"Missing closing ']'"
+        if s[0] in ",]":
+            lst.append(a)
+        elif s[0] == "-":
+            b, s = slurm_parse_int(s[1:])
+            lst.extend(range(a, b + 1))
+    assert len(s) > 0, f"Missing closing ']'"
+
+
+def slurm_parse_node(s):
+    # parse a "node" expression
+    for i, c in enumerate(s):
+        if c == ",":  # name,...
+            return [s[:i]], s[i + 1 :]
+        if c == "[":  # name[v],...
+            b, rest = slurm_parse_brackets(s[i + 1 :])
+            if len(rest) > 0:
+                assert rest[0] == ",", f"Expected comma after brackets in {s[i:]}"
+                rest = rest[1:]
+            return [s[:i] + str(z) for z in b], rest
+
+    return [s], ""
+
+
+def slurm_parse_list(s):
+    lst = []
+    while len(s) > 0:
+        v, s = slurm_parse_node(s)
+        lst.extend(v)
+    return lst
+
+
+for s in node_lists:
+    print(s)
+    print(slurm_parse_list(s))
+
 
 def get_first_hostname(nodelist):
     """Extract the first hostname from a SLURM nodelist string."""
