@@ -13,6 +13,14 @@ import argparse
 import random
 import warnings
 
+def _print_slurm_environment():
+    if 'SLURM_PROCID' in os.environ and int(os.environ['SLURM_PROCID']) == 0:
+        for key, val in os.environ.items():
+            if key.startswith("SLURM_"):
+                print(f"{key}={val}")
+
+_print_slurm_environment()
+#exit(0)
 
 def get_first_hostname(nodelist):
     """Extract the first hostname from a SLURM nodelist string."""
@@ -68,11 +76,11 @@ def get_devices():
 
 
 def get_machine_rank():
-    return int(os.environ.get("SLURM_PROCID", "0"))
+    return int(os.environ.get("SLURM_NODEID", "0"))
 
 
-def get_world_size():
-    return int(os.environ.get("SLURM_NTASKS", "1"))
+def get_num_machines():
+    return int(os.environ.get("SLURM_NNODES", "1"))
 
 
 def get_dist_backend():
