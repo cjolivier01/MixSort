@@ -306,12 +306,7 @@ if __name__ == "__main__":
         args.experiment_name = exp.exp_name
 
     num_gpu = torch.cuda.device_count() if args.devices is None else args.devices
-    #num_gpu = min(num_gpu, 4)
-    #assert num_gpu <= torch.cuda.device_count()
-    #time.sleep(args.machine_rank)
-    #args.num_machines = 4
     print(f"machine rank: {args.machine_rank}, hostname={socket.gethostname()}, ngpu={num_gpu}, dist_url={args.dist_url}")
-    #os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
     launch(
         main,
         num_gpu,
