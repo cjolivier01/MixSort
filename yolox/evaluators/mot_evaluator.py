@@ -372,7 +372,7 @@ class MOTEvaluator:
 
                 outputs = postprocess(outputs, self.num_classes, self.confthre, self.nmsthre)
                 if outputs and outputs[0] is not None:
-                    print(f" >>> {outputs[0].shape[0]} detections")
+                    #print(f" >>> {outputs[0].shape[0]} detections")
                     assert outputs[0].shape[1] == 7  # Yolox output has 7 fields?
 
                 if is_time_record:
@@ -388,8 +388,8 @@ class MOTEvaluator:
                 online_tlwhs = []
                 online_ids = []
                 online_scores = []
-                if online_targets:
-                    print(f"{len(online_targets)} targets")
+                # if online_targets:
+                #     print(f"{len(online_targets)} targets")
                 for t in online_targets:
                     tlwh = t.tlwh
                     tid = t.track_id
