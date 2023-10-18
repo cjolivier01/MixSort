@@ -332,7 +332,7 @@ class MOTEvaluator:
 
         tracker = MIXTracker(self.args)
         #ori_thresh = self.args.track_thresh
-        for cur_iter, (origin_imgs, imgs, _, info_imgs, ids) in enumerate(
+        for cur_iter, (origin_imgs, imgs, inscribed_images, info_imgs, ids) in enumerate(
             progress_bar(self.dataloader)
         ):
             # info_imgs is 4 scalar tensors: height, width, frame_id, video_id
@@ -401,20 +401,6 @@ class MOTEvaluator:
                     else:
                         print("Skipping target")
 
-                # if not online_tlwhs:
-                #     for index, det in enumerate(detections):
-                #         tlwh = det.tlwh
-                #         #assert det.track_id == 0
-                #         tid = -det.track_id
-                #         #tid = -index
-                #         #vertical = tlwh[2] / tlwh[3] > 1.6
-                #         vertical = False
-                #         if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
-                #             online_tlwhs.append(tlwh)
-                #             online_ids.append(tid)
-                #             online_scores.append(det.score)
-
-
                 if self.online_callback is not None:
                     self.online_callback(
                         frame_id=frame_id,
@@ -423,6 +409,7 @@ class MOTEvaluator:
                         online_scores=online_scores,
                         info_imgs=info_imgs,
                         img=imgs,
+                        inscribed_image=inscribed_images,
                         original_img=origin_imgs)
                     continue
 
