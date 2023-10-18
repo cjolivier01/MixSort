@@ -7,4 +7,4 @@ OMP_NUM_THREADS=16 \
     --start_epoch=4 \
     --num_machines=4 \
     --machine_rank=3 \
-    -f exps/example/mot/yolox_x_hockey.py -d 8 -b 64 --fp16 -c YOLOX_outputs/yolox_x_hockey/latest_ckpt.pth.tar
+    -f exps/example/mot/yolox_x_hockey_train.py -d 8 -b 64 --fp16 -c YOLOX_outputs/yolox_x_hockey/latest_ckpt.pth.tar

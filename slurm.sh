@@ -1,8 +1,8 @@
 #!/bin/bash
 
 GPUS_PER_HOST=4
-BATCH_SIZE_PER_GPU=1
-NODE_COUNT=2
+BATCH_SIZE_PER_GPU=4
+NODE_COUNT=12
 
 TOTAL_BATCH_SIZE=$(( $GPUS_PER_HOST * $BATCH_SIZE_PER_GPU * $NODE_COUNT ))
 echo "TOTAL_BATCH_SIZE=$TOTAL_BATCH_SIZE"
@@ -13,7 +13,7 @@ srun --tasks-per-node 1 \
     -p sw-dpu  \
     --exclusive \
       ./p tools/train.py \
-      -f exps/example/mot/yolox_x_hockey.py \
+      -f exps/example/mot/yolox_x_hockey_train.py \
       -d ${GPUS_PER_HOST} \
       -b ${TOTAL_BATCH_SIZE} \
       --fp16 \
