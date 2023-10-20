@@ -1,9 +1,13 @@
 #!/bin/bash
 
-GPUS_PER_HOST=4
-BATCH_SIZE_PER_GPU=3
-#NODE_COUNT=14
-NODE_COUNT=25
+PARTITION_NAME=sw-a100
+#PARTITION_NAME=sw-dpu
+GPUS_PER_HOST=8
+BATCH_SIZE_PER_GPU=8
+NODE_COUNT=1
+#GRES=dpu:1
+GRES=gpu:8
+#NODE_COUNT=25
 START_EPOCH=7
 TOTAL_BATCH_SIZE=$(( $GPUS_PER_HOST * $BATCH_SIZE_PER_GPU * $NODE_COUNT ))
 echo "TOTAL_BATCH_SIZE=$TOTAL_BATCH_SIZE"
@@ -13,9 +17,9 @@ PRETRAINED_CHECKPOINT="./YOLOX_outputs/yolox_x_hockey_train/latest_ckpt.pth.tar"
 
 srun --tasks-per-node 1 \
     -N ${NODE_COUNT} \
-    --gres dpu:1 \
+    --gres ${GRES} \
     --cpus-per-task=90 \
-    -p sw-dpu  \
+    -p ${PARTITION_NAME}  \
     --exclusive \
       ./p tools/train.py \
       -f exps/example/mot/yolox_x_hockey_train.py \
