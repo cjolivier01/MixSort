@@ -389,7 +389,7 @@ class MOTEvaluator:
                 online_ids = []
                 online_scores = []
                 # if online_targets:
-                #     print(f"{len(online_targets)} targets")
+                #     print(f"{len(online_targets)} targets, {len(detections)} detections")
                 for t in online_targets:
                     tlwh = t.tlwh
                     tid = t.track_id
@@ -407,6 +407,7 @@ class MOTEvaluator:
                         online_tlwhs=online_tlwhs,
                         online_ids=online_ids,
                         online_scores=online_scores,
+                        detections=detections,
                         info_imgs=info_imgs,
                         img=imgs,
                         inscribed_image=inscribed_images,
