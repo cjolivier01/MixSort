@@ -11,7 +11,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from .base_functions import *
 # network related
 from lib.models.mixformer import build_mixformer, build_mixformer_online_score
-from lib.models.mixformer_vit import build_mixformer_vit, build_mixformer_vit_multi, build_mixformer_vit_multi_score, build_mixformer_vit_decoder, build_mixformer_deit_multi_score, build_mixformer_deit, build_mixformer_deit_hockey
+from lib.models.mixformer_vit import build_mixformer_vit, build_mixformer_vit_multi, build_mixformer_vit_multi_score, build_mixformer_vit_decoder, build_mixformer_deit_multi_score, build_mixformer_deit
 from lib.models.mixformer_vit import build_mixformerpp_vit_multi_score, build_mixformer_vit_window, build_mixformer_sparse_vit, build_mixformer_vit_learn_pos, build_mixformer_vit_decoder_multi_score
 # forward propagation related
 from lib.train.actors import MixFormerActor
