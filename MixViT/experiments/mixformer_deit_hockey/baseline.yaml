@@ -22,7 +22,7 @@ DATA:
   TRAIN:
     # DATASETS_NAME: "SoccerNet_train","SoccerNet_test","DanceTrack_train","DanceTrack_val","SportsMOT_train","SportsMOT_val","SportsMOT_mix","MOT17-train","MOT17-train_half","MOT17-val_half"
     DATASETS_NAME:
-    - SportsMOT_train
+    - hockeyTrackingDataset
     DATASETS_RATIO:
     - 1
     SAMPLE_PER_EPOCH: 60000
@@ -34,7 +34,7 @@ DATA:
     SAMPLE_PER_EPOCH: 10000
 MODEL:
   BACKBONE:
-    PRETRAINED: True 
+    PRETRAINED: True
     PRETRAINED_PATH: 'pretrained/MixFormerOnlineScore.pth.tar'
     INIT: 'trunc_norm'
     NUM_STAGES: 3

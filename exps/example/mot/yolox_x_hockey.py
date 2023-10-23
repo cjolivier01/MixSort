@@ -20,8 +20,11 @@ class Exp(MyExp):
 
         # Both dims must be a multiple of 32
 
-        self.input_size = (608, 2176)
-        self.test_size = (608, 2176)
+        # self.input_size = (704, 1280)
+        # self.test_size = (704, 1280)
+
+        self.input_size = (608, 2048)
+        self.test_size = (608, 2048)
 
         self.random_size = (18, 32)
         self.max_epoch = 80
