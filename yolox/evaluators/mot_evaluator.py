@@ -433,7 +433,6 @@ class MOTEvaluator:
                         inscribed_image=inscribed_images,
                         original_img=origin_imgs,
                     )
-                    continue
 
                 # save results
                 results.append((frame_id, online_tlwhs, online_ids, online_scores))
