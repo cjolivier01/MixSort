@@ -10,7 +10,7 @@ BATCH_SIZE_PER_GPU=3
 #NODE_COUNT="-N 35"
 #NODE_COUNT="-N 1"
 NODE_COUNT=23
-START_EPOCH=51
+START_EPOCH=71
 TOTAL_BATCH_SIZE=$(( $GPUS_PER_HOST * $BATCH_SIZE_PER_GPU * $NODE_COUNT ))
 echo "TOTAL_BATCH_SIZE=$TOTAL_BATCH_SIZE"
 
@@ -28,7 +28,6 @@ RESUME="--resume"
 EXP="exps/example/mot/yolox_x_ch.py"
 #PRETRAINED_CHECKPOINT="pretrained/yolox_x.pth"
 PRETRAINED_CHECKPOINT="YOLOX_outputs/yolox_x_ch/latest_ckpt.pth.tar"
-
 
 srun --tasks-per-node 1 \
     ${NODE_COUNT} \
