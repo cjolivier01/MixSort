@@ -390,7 +390,7 @@ class MOTEvaluator:
                     outputs, self.num_classes, self.confthre, self.nmsthre
                 )
                 if outputs and outputs[0] is not None:
-                    print(f" >>> {outputs[0].shape[0]} detections")
+                    #print(f" >>> {outputs[0].shape[0]} detections")
                     assert outputs[0].shape[1] == 7  # Yolox output has 7 fields?
 
                 if is_time_record:
