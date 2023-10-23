@@ -116,6 +116,8 @@ def run(settings):
         actor = MixFormerActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, run_score_head=True)
     elif settings.script_name == 'mixformer_deit':
         actor = MixFormerActor(net=net)
+    elif settings.script_name == 'mixformer_deit_hockey':
+        actor = MixFormerActor(net=net)
     else:
         raise ValueError("illegal script name")
 

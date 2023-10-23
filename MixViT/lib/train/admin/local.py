@@ -19,6 +19,8 @@ class EnvironmentSettings:
         self.dancetrack_anno_dir = f"{self.dataset_dir}/DanceTrack/tracking_annos"
         self.soccernet_dir = f"{self.dataset_dir}/SoccerNet"
         self.soccernet_anno_dir = f"{self.dataset_dir}/SoccerNet/tracking_annos"
+        self.hockey_dir = f"{self.dataset_dir}/hockeyTrackingDataset"
+        self.hockey_anno_dir = f"{self.dataset_dir}/hockeyTrackingDataset/tracking_annos"
         self.lasot_dir = ""
         self.tnl2k_dir = ""
         self.got10k_dir = ""

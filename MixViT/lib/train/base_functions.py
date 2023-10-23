@@ -28,11 +28,13 @@ def names2datasets(name_list: list, settings, image_loader):
     assert isinstance(name_list, list)
     datasets = []
     for name in name_list:
-        assert name in ["SoccerNet_train","SoccerNet_test","DanceTrack_train","DanceTrack_val","SportsMOT_train","SportsMOT_val","SportsMOT_mix","SportsMOT_test","MOT17-train","MOT17-train_half","MOT20-train","MOT17-val_half","LASOT", "GOT10K_vottrain", "GOT10K_votval", "GOT10K_train_full", "COCO17", "VID", "TRACKINGNET", "TNL2k"]
+        assert name in ["SoccerNet_train","SoccerNet_test","DanceTrack_train","DanceTrack_val","SportsMOT_train","SportsMOT_val","SportsMOT_mix","SportsMOT_test","MOT17-train","MOT17-train_half","MOT20-train","MOT17-val_half","LASOT", "GOT10K_vottrain", "GOT10K_votval", "GOT10K_train_full", "COCO17", "VID", "TRACKINGNET", "TNL2k", "hockeyTrackingDataset"]
         if "SoccerNet" in name:
             datasets.append(SoccerNet(settings.env.soccernet_dir,settings.env.soccernet_anno_dir, split=name.split('_')[1], image_loader=image_loader))
         if "Sports" in name:
             datasets.append(SportsMOT(settings.env.sportsmot_dir,settings.env.sportsmot_anno_dir, split=name.split('_')[1], image_loader=image_loader))
+        if "hockey" in name:
+            datasets.append(SportsMOT(settings.env.hockey_dir,settings.env.hockey_anno_dir, split="train", image_loader=image_loader))
         if "MOT17" in name:
             datasets.append(MOT17(settings.env.mot17_dir,settings.env.mot17_anno_dir, split=name.split('-')[1], image_loader=image_loader))
         if "MOT20" in name:
