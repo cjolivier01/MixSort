@@ -43,7 +43,7 @@ node_lists = [
 def set_slurm_env_variables(node_list, tasks_per_node):
     """
     Set virtual Slurm environment variables based on the node list and tasks per node.
-    
+
     Args:
     - node_list (list of str): List of node names
     - tasks_per_node (int): Number of tasks per node
@@ -193,7 +193,6 @@ def get_num_machines():
 
 def get_dist_backend():
     return "nccl"
-    #return "gloo"
 
 
 def make_parser():

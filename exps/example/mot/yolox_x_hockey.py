@@ -23,11 +23,11 @@ class Exp(MyExp):
         # self.input_size = (1856, 3904)
         # self.test_size = (1856, 3904)
 
-        self.input_size = (800, 2880)
-        self.test_size = (800, 2880)
+        # self.input_size = (800, 2880)
+        # self.test_size = (800, 2880)
 
-        # self.input_size = (608, 2176)
-        # self.test_size = (608, 2176)
+        self.input_size = (608, 2176)
+        self.test_size = (608, 2176)
 
         # self.input_size = (416, 1408)
         # self.test_size = (416, 1408)
