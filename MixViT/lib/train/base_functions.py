@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data.distributed import DistributedSampler
 # datasets related
-from lib.train.dataset import Lasot, Got10k, MSCOCOSeq, ImagenetVID, TrackingNet, TNL2k, SportsMOT, MOT17, DanceTrack, MOT20, SoccerNet
+from lib.train.dataset import Lasot, Got10k, MSCOCOSeq, ImagenetVID, TrackingNet, TNL2k, SportsMOT, MOT17, DanceTrack, MOT20, SoccerNet, HockeyTrackingDataset
 from lib.train.dataset import Lasot_lmdb, Got10k_lmdb, MSCOCOSeq_lmdb, ImagenetVID_lmdb, TrackingNet_lmdb
 from lib.train.data import sampler, opencv_loader, processing, LTRLoader
 import lib.train.data.transforms as tfm
@@ -34,7 +34,7 @@ def names2datasets(name_list: list, settings, image_loader):
         if "Sports" in name:
             datasets.append(SportsMOT(settings.env.sportsmot_dir,settings.env.sportsmot_anno_dir, split=name.split('_')[1], image_loader=image_loader))
         if "hockey" in name:
-            datasets.append(SportsMOT(settings.env.hockey_dir,settings.env.hockey_anno_dir, split="train", image_loader=image_loader))
+            datasets.append(HockeyTrackingDataset(settings.env.hockey_dir,settings.env.hockey_anno_dir, split="train", image_loader=image_loader))
         if "MOT17" in name:
             datasets.append(MOT17(settings.env.mot17_dir,settings.env.mot17_anno_dir, split=name.split('-')[1], image_loader=image_loader))
         if "MOT20" in name:

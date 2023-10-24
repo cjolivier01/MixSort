@@ -15,3 +15,4 @@ from .mot17 import MOT17
 from .dancetrack import DanceTrack
 from .mot20 import MOT20
 from .soccernet import SoccerNet
+from .hockey_tracking_dataset import HockeyTrackingDataset
