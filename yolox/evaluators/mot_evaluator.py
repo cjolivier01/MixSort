@@ -26,6 +26,7 @@ import json
 import tempfile
 import time
 
+from hmlib.tracking_utils.timer import Timer
 
 def write_results(filename, results):
     save_format = "{frame},{id},{x1},{y1},{w},{h},{s},-1,-1,-1\n"
@@ -100,6 +101,8 @@ class MOTEvaluator:
         self.num_classes = num_classes
         self.args = args
         self.online_callback = online_callback
+        self.timer = None
+        self.timer_counter = 0
 
     def evaluate_byte(
         self,
@@ -380,9 +383,25 @@ class MOTEvaluator:
                 if is_time_record:
                     start = time.time()
 
+                if self.timer is None:
+                    self.timer = Timer()
+                self.timer.tic()
+
                 with torch.no_grad():
                     outputs = model(imgs)
                     # print(outputs)
+
+                self.timer.toc()
+                self.timer_counter += 1
+                if self.timer_counter % 50 == 0:
+                    logger.info(
+                        "Model forward pass {} ({:.2f} fps)".format(
+                            frame_id, 1.0 / max(1e-5, self.timer.average_time)
+                        )
+                    )
+                    self.timer = Timer()
+
+
                 if decoder is not None:
                     outputs = decoder(outputs, dtype=outputs.type())
 
