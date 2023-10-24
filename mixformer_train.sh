@@ -9,7 +9,7 @@ for i in {0..7}; do
    MASTER_ADDR="127.0.0.1" \
    MASTER_PORT=34595 \
    RANK=$i \
-   ./p MixViT/lib/train/run_training.py --local_rank=$i --script mixformer_deit_hockey --config baseline --save_dir=./exp/mixformer_deit_hockey &
+   ./p MixViT/lib/train/run_training.py --local_rank=$i --script mixformer_deit_hockey --config baseline --save_dir=./exp/mixformer_deit_hockey > mf-train-$i.log 2>&1 &
 done
 
 # OMP_NUM_THREADS=16 \
