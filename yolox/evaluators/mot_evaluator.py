@@ -401,7 +401,6 @@ class MOTEvaluator:
                     )
                     self.timer = Timer()
 
-
                 if decoder is not None:
                     outputs = decoder(outputs, dtype=outputs.type())
 
