@@ -87,7 +87,7 @@ def run(settings):
 
     # Build dataloaders
     loader_train, loader_val = build_dataloaders(cfg, settings)
-
+    assert torch.cuda.is_available()
     # wrap networks to distributed one
     net.cuda()
     if settings.local_rank != -1:
