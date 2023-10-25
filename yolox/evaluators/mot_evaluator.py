@@ -465,6 +465,8 @@ class MOTEvaluator:
                 )
                 write_results(result_filename, results)
 
+        assert cur_iter == len(self.dataloader) - 1 and "colivier: this is broken, off by one maybe"
+
         statistics = torch.cuda.FloatTensor([inference_time, track_time, n_samples])
         if distributed:
             data_list = gather(data_list, dst=0)
