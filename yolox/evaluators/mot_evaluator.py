@@ -631,6 +631,12 @@ class MOTEvaluator:
                 )
                 write_results_no_score(result_filename, results)
 
+        # always write results
+        result_filename = os.path.join(
+            result_folder, "{}.txt".format(video_names[video_id])
+        )
+        write_results_no_score(result_filename, results)
+
         statistics = torch.cuda.FloatTensor([inference_time, track_time, n_samples])
         if distributed:
             data_list = gather(data_list, dst=0)
