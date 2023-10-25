@@ -146,3 +146,4 @@ docs/api
 events.out.tfevents*
 YOLOX_outputs
 YOLOX_outputs
+/exp
