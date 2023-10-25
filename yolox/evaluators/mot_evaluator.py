@@ -238,7 +238,7 @@ class MOTEvaluator:
                         online_scores.append(t.score)
 
                 if self.online_callback is not None:
-                    self.online_callback(
+                    _, online_tlwhs = self.online_callback(
                         frame_id=frame_id,
                         online_tlwhs=online_tlwhs,
                         online_ids=online_ids,
@@ -440,7 +440,7 @@ class MOTEvaluator:
                         print("Skipping target")
 
                 if self.online_callback is not None:
-                    self.online_callback(
+                    detections, online_tlwhs = self.online_callback(
                         frame_id=frame_id,
                         online_tlwhs=online_tlwhs,
                         online_ids=online_ids,
@@ -465,7 +465,11 @@ class MOTEvaluator:
                 )
                 write_results(result_filename, results)
 
-        assert cur_iter == len(self.dataloader) - 1 and "colivier: this is broken, off by one maybe"
+        # always write results
+        result_filename = os.path.join(
+            result_folder, "{}.txt".format(video_names[video_id])
+        )
+        write_results(result_filename, results)
 
         statistics = torch.cuda.FloatTensor([inference_time, track_time, n_samples])
         if distributed:
@@ -608,7 +612,7 @@ class MOTEvaluator:
                         online_ids.append(tid)
 
                 if self.online_callback is not None:
-                    self.online_callback(
+                    _, online_tlwhs = self.online_callback(
                         frame_id=frame_id,
                         online_tlwhs=online_tlwhs,
                         online_ids=online_ids,
@@ -791,7 +795,7 @@ class MOTEvaluator:
                         online_ids.append(tid)
 
                 if self.online_callback is not None:
-                    self.online_callback(
+                    _, online_tlwhs = self.online_callback(
                         frame_id=frame_id,
                         online_tlwhs=online_tlwhs,
                         online_ids=online_ids,
@@ -934,7 +938,7 @@ class MOTEvaluator:
                     online_ids.append(tid)
 
             if self.online_callback is not None:
-                self.online_callback(
+                _, online_tlwhs = self.online_callback(
                     frame_id=frame_id,
                     online_tlwhs=online_tlwhs,
                     online_ids=online_ids,
@@ -1079,7 +1083,7 @@ class MOTEvaluator:
                     online_ids.append(tid)
 
             if self.online_callback is not None:
-                self.online_callback(
+                _, online_tlwhs = self.online_callback(
                     frame_id=frame_id,
                     online_tlwhs=online_tlwhs,
                     online_ids=online_ids,
@@ -1225,7 +1229,7 @@ class MOTEvaluator:
                     online_scores.append(t.score)
 
             if self.online_callback is not None:
-                self.online_callback(
+                _, online_tlwhs = self.online_callback(
                     frame_id=frame_id,
                     online_tlwhs=online_tlwhs,
                     online_ids=online_ids,
