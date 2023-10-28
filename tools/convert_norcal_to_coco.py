@@ -54,6 +54,12 @@ if __name__ == "__main__":
         help="Comma-delimited list of track id's to set as 'ignore'",
     )
     parser.add_argument(
+        "--replace-track-ids",
+        default="",
+        type=str,
+        help="Comma-delimited list of track id replacement old=new track ids",
+    )
+    parser.add_argument(
         "--no-ignore",
         default=False,
         action="store_true",
@@ -76,6 +82,15 @@ if __name__ == "__main__":
     if args.ignore_track_ids:
         ignore_list = args.ignore_track_ids.split(",")
         ignore_track_ids = set([int(i) for i in ignore_list])
+
+    replace_track_ids = dict()
+    if args.replace_track_ids:
+        replace_list = args.replace_track_ids.split(",")
+        for replace in replace_list:
+          tokens = replace.split('=')
+          old = tokens[0]
+          new = tokens[1]
+          replace_track_ids[int(old)] = int(new)
 
     for split in SPLITS:
         if split == "test":
@@ -238,6 +253,9 @@ if __name__ == "__main__":
                     if frame_id - 1 < image_range[0] or frame_id - 1 > image_range[1]:
                         continue
                     track_id = int(anns[i][1])
+
+                    track_id = replace_track_ids.get(track_id, track_id)
+
                     all_track_ids.add(track_id)
                     # if track_id:
                     #   print(f"track_id={track_id}")
