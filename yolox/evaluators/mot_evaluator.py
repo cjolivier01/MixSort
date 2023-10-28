@@ -417,53 +417,58 @@ class MOTEvaluator:
 
             output_results = self.convert_to_coco_format(outputs, info_imgs, ids)
             data_list.extend(output_results)
-
-            # run tracking
-            if outputs[0] is not None:
-                online_targets, detections = tracker.update(
-                    outputs[0], info_imgs, self.img_size, origin_imgs.squeeze(0).cuda()
-                )
-                online_tlwhs = []
-                online_ids = []
-                online_scores = []
-                # if online_targets:
-                #     print(f"{len(online_targets)} targets, {len(detections)} detections")
-                for t in online_targets:
-                    tlwh = t.tlwh
-                    tid = t.track_id
-                    vertical = tlwh[2] / tlwh[3] > 1.6
-                    if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
-                        online_tlwhs.append(tlwh)
-                        online_ids.append(tid)
-                        online_scores.append(t.score)
-                    else:
-                        print("Skipping target")
-
-                if self.online_callback is not None:
-                    detections, online_tlwhs = self.online_callback(
-                        frame_id=frame_id,
-                        online_tlwhs=online_tlwhs,
-                        online_ids=online_ids,
-                        online_scores=online_scores,
-                        detections=detections,
-                        info_imgs=info_imgs,
-                        img=imgs,
-                        inscribed_image=inscribed_images,
-                        original_img=origin_imgs,
+            for frame_index in range(len(outputs)):
+                frame_id = info_imgs[2].item() + frame_index
+                # run tracking
+                if outputs[frame_index] is not None:
+                    online_targets, detections = tracker.update(
+                        outputs[frame_index],
+                        info_imgs,
+                        self.img_size,
+                        imgs[frame_index].cuda(),
+                        #origin_imgs[frame_index].cuda(),
                     )
+                    online_tlwhs = []
+                    online_ids = []
+                    online_scores = []
+                    # if online_targets:
+                    #     print(f"{len(online_targets)} targets, {len(detections)} detections")
+                    for t in online_targets:
+                        tlwh = t.tlwh
+                        tid = t.track_id
+                        vertical = tlwh[2] / tlwh[3] > 1.6
+                        if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
+                            online_tlwhs.append(tlwh)
+                            online_ids.append(tid)
+                            online_scores.append(t.score)
+                        else:
+                            print("Skipping target")
 
-                # save results
-                results.append((frame_id, online_tlwhs, online_ids, online_scores))
+                    if self.online_callback is not None:
+                        detections, online_tlwhs = self.online_callback(
+                            frame_id=frame_id,
+                            online_tlwhs=online_tlwhs,
+                            online_ids=online_ids,
+                            online_scores=online_scores,
+                            detections=detections,
+                            info_imgs=info_imgs,
+                            img=imgs[frame_index].unsqueeze(0),
+                            inscribed_image=inscribed_images[frame_index].unsqueeze(0),
+                            original_img=origin_imgs[frame_index].unsqueeze(0),
+                        )
 
-            if is_time_record:
-                track_end = time_synchronized()
-                track_time += track_end - infer_end
+                    # save results
+                    results.append((frame_id, online_tlwhs, online_ids, online_scores))
 
-            if cur_iter == len(self.dataloader) - 1:
-                result_filename = os.path.join(
-                    result_folder, "{}.txt".format(video_names[video_id])
-                )
-                write_results(result_filename, results)
+                if is_time_record:
+                    track_end = time_synchronized()
+                    track_time += track_end - infer_end
+
+                if cur_iter == len(self.dataloader) - 1:
+                    result_filename = os.path.join(
+                        result_folder, "{}.txt".format(video_names[video_id])
+                    )
+                    write_results(result_filename, results)
 
         # always write results
         result_filename = os.path.join(
