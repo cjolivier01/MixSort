@@ -19,10 +19,11 @@ def _is_image(file: str):
     upper = file.lower()
     return upper.endswith(".png")
 
+
 def _tf_str(val: bool):
-  if val:
-    return "true"
-  return "false"
+    if val:
+        return "true"
+    return "false"
 
 
 if __name__ == "__main__":
@@ -73,8 +74,8 @@ if __name__ == "__main__":
 
     ignore_track_ids = set()
     if args.ignore_track_ids:
-      ignore_list = args.ignore_track_ids.split(',')
-      ignore_track_ids = set([int(i) for i in ignore_list])
+        ignore_list = args.ignore_track_ids.split(",")
+        ignore_track_ids = set([int(i) for i in ignore_list])
 
     for split in SPLITS:
         if split == "test":
@@ -126,7 +127,11 @@ if __name__ == "__main__":
                 if i < image_range[0] or i > image_range[1]:
                     continue
                 input_file_name = os.path.join(
-                    seq, "img1", "{}{:06d}.png".format(args.input_image_prefix, i + args.image_start_number)
+                    seq,
+                    "img1",
+                    "{}{:06d}.png".format(
+                        args.input_image_prefix, i + args.image_start_number
+                    ),
                 )
                 output_file_name = ""
                 if not args.single_sequence:
@@ -135,7 +140,9 @@ if __name__ == "__main__":
                     output_file_name = "img1"
                 output_file_name = os.path.join(
                     output_file_name,
-                    "{}{:06d}.png".format(args.output_image_prefix, i + args.image_start_number),
+                    "{}{:06d}.png".format(
+                        args.output_image_prefix, i + args.image_start_number
+                    ),
                 )
                 img = cv2.imread(os.path.join(data_path, input_file_name))
                 height, width = img.shape[:2]
@@ -254,6 +261,9 @@ if __name__ == "__main__":
                     else:
                         category_id = 1  # pedestrian(non-static)
                         non_ignored_person += 1
+
+                    if not ignore and track_id in ignore_track_ids:
+                        ignore = True
 
                     if category_id not in seen_categories:
                         print(f"Category: {category_id}")
