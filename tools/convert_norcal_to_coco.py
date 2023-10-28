@@ -47,6 +47,12 @@ if __name__ == "__main__":
         help="Start number of the frame image files (default = 1)",
     )
     parser.add_argument(
+        "--ignore-track-ids",
+        default="",
+        type=str,
+        help="Comma-delimited list of track id's to set as 'ignore'",
+    )
+    parser.add_argument(
         "--no-ignore",
         default=False,
         action="store_true",
@@ -64,6 +70,11 @@ if __name__ == "__main__":
         os.makedirs(OUT_PATH)
 
     seen_categories = set()
+
+    ignore_track_ids = set()
+    if args.ignore_track_ids:
+      ignore_list = args.ignore_track_ids.split(',')
+      ignore_track_ids = set([int(i) for i in ignore_list])
 
     for split in SPLITS:
         if split == "test":
