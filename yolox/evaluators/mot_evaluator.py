@@ -471,7 +471,7 @@ class MOTEvaluator:
                             original_img=origin_imgs[frame_index].unsqueeze(0),
                         )
                     # save results
-                    results.append((frame_id, online_tlwhs, online_ids, online_scores))
+                    results.append((frame_id.item(), online_tlwhs, online_ids, online_scores))
 
                 if is_time_record:
                     track_end = time_synchronized()
