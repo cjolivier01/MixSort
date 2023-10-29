@@ -103,6 +103,8 @@ class MOTEvaluator:
         self.online_callback = online_callback
         self.timer = None
         self.timer_counter = 0
+        self.track_timer = Timer()
+        self.track_timer_counter = 0
 
     def evaluate_byte(
         self,
@@ -355,10 +357,11 @@ class MOTEvaluator:
             # info_imgs is 4 scalar tensors: height, width, frame_id, video_id
             with torch.no_grad():
                 # init tracker
-                frame_id = info_imgs[2].item()
+                frame_id = info_imgs[2][0]
                 video_id = info_imgs[3].item()
                 img_file_name = info_imgs[4]
                 video_name = img_file_name[0].split("/")[-1]
+                batch_size = imgs.shape[0]
 
                 if video_name not in video_names:
                     video_names[video_id] = video_name
@@ -396,7 +399,7 @@ class MOTEvaluator:
                 if self.timer_counter % 50 == 0:
                     logger.info(
                         "Model forward pass {} ({:.2f} fps)".format(
-                            frame_id, 1.0 / max(1e-5, self.timer.average_time)
+                            frame_id, (1.0 / max(1e-5, self.timer.average_time) * batch_size)
                         )
                     )
                     self.timer = Timer()
@@ -418,9 +421,10 @@ class MOTEvaluator:
             output_results = self.convert_to_coco_format(outputs, info_imgs, ids)
             data_list.extend(output_results)
             for frame_index in range(len(outputs)):
-                frame_id = info_imgs[2].item() + frame_index
+                frame_id = info_imgs[2][frame_index]
                 # run tracking
                 if outputs[frame_index] is not None:
+                    self.track_timer.tic()
                     online_targets, detections = tracker.update(
                         outputs[frame_index],
                         info_imgs,
@@ -443,6 +447,15 @@ class MOTEvaluator:
                             online_scores.append(t.score)
                         else:
                             print("Skipping target")
+                    self.track_timer.toc()
+                    self.track_timer_counter += 1
+                    if self.track_timer_counter % 50 == 0:
+                        logger.info(
+                            "Tracking {} ({:.2f} fps)".format(
+                                frame_id, 1.0 / max(1e-5, self.track_timer.average_time)
+                            )
+                        )
+                        self.track_timer = Timer()
 
                     if self.online_callback is not None:
                         detections, online_tlwhs = self.online_callback(
@@ -456,7 +469,6 @@ class MOTEvaluator:
                             inscribed_image=inscribed_images[frame_index].unsqueeze(0),
                             original_img=origin_imgs[frame_index].unsqueeze(0),
                         )
-
                     # save results
                     results.append((frame_id, online_tlwhs, online_ids, online_scores))
 
