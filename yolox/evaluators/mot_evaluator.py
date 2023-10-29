@@ -396,7 +396,7 @@ class MOTEvaluator:
 
                 self.timer.toc()
                 self.timer_counter += 1
-                if self.timer_counter % 50 == 0:
+                if self.timer_counter % (50//batch_size) == 0:
                     logger.info(
                         "Model forward pass {} ({:.2f} fps)".format(
                             frame_id, (1.0 / max(1e-5, self.timer.average_time) * batch_size)
