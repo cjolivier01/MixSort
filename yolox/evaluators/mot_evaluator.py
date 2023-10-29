@@ -422,7 +422,7 @@ class MOTEvaluator:
             data_list.extend(output_results)
             for frame_index in range(len(outputs)):
                 frame_id = info_imgs[2][frame_index]
-                print(f"frame_id={frame_id}")
+                #print(f"frame_id={frame_id}")
                 # run tracking
                 if outputs[frame_index] is not None:
                     self.track_timer.tic()
