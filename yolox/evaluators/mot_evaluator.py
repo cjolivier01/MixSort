@@ -26,6 +26,9 @@ import json
 import tempfile
 import time
 
+import pt_autograph
+import pt_autograph.flow.runner as runner
+
 from hmlib.tracking_utils.timer import Timer
 
 def write_results(filename, results):
@@ -440,7 +443,7 @@ class MOTEvaluator:
                         return online_targets, detections
 
                     if use_autograph:
-                        online_targets, detections = pt_autograph.flow.runner.maybe_run_converted(
+                        online_targets, detections = runner.maybe_run_converted(
                                 _inner_update,
                                 outputs,
                                 frame_index,
