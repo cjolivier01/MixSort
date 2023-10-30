@@ -335,6 +335,8 @@ class MOTEvaluator:
         track_time = 0
         n_samples = len(self.dataloader) - 1
 
+        use_autograph = False
+
         if trt_file is not None:
             from torch2trt import TRTModule
 
@@ -426,13 +428,41 @@ class MOTEvaluator:
                 # run tracking
                 if outputs[frame_index] is not None:
                     self.track_timer.tic()
-                    online_targets, detections = tracker.update(
-                        outputs[frame_index],
-                        info_imgs,
-                        self.img_size,
-                        imgs[frame_index].cuda(),
-                        #origin_imgs[frame_index].cuda(),
-                    )
+
+                    def _inner_update(outputs, frame_index, img_size, img):
+                        online_targets, detections = tracker.update(
+                            outputs[frame_index],
+                            info_imgs,
+                            self.img_size,
+                            img,
+                            #origin_imgs[frame_index].cuda(),
+                        )
+                        return online_targets, detections
+
+                    if use_autograph:
+                        online_targets, detections = pt_autograph.flow.runner.maybe_run_converted(
+                                _inner_update,
+                                outputs,
+                                frame_index,
+                                self.img_size,
+                                imgs[frame_index].cuda()
+                            )
+                    else:
+                        online_targets, detections = _inner_update(
+                            outputs,
+                            frame_index,
+                            self.img_size,
+                            imgs[frame_index].cuda()
+                        )
+
+                    # online_targets, detections = tracker.update(
+                    #     outputs[frame_index],
+                    #     info_imgs,
+                    #     self.img_size,
+                    #     imgs[frame_index].cuda(),
+                    #     #origin_imgs[frame_index].cuda(),
+                    # )
+
                     online_tlwhs = []
                     online_ids = []
                     online_scores = []
