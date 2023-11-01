@@ -26,8 +26,8 @@ import json
 import tempfile
 import time
 
-import pt_autograph
-import pt_autograph.flow.runner as runner
+#import pt_autograph
+#import pt_autograph.flow.runner as runner
 
 from hmlib.tracking_utils.timer import Timer
 
