@@ -224,7 +224,7 @@ def main(exp, args, num_gpu):
         decoder = None
 
     # start evaluate
-    *_, summary = evaluator.evaluate_mixsort(
+    *_, summary = evaluator.evaluate_mixsort(gsu
         model, is_distributed, args.fp16, trt_file, decoder, exp.test_size, results_folder
     )
     logger.info("\n" + summary)
