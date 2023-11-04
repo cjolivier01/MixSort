@@ -26,10 +26,11 @@ import json
 import tempfile
 import time
 
-#import pt_autograph
-#import pt_autograph.flow.runner as runner
+# import pt_autograph
+# import pt_autograph.flow.runner as runner
 
 from hmlib.tracking_utils.timer import Timer
+
 
 def write_results(filename, results):
     save_format = "{frame},{id},{x1},{y1},{w},{h},{s},-1,-1,-1\n"
@@ -401,10 +402,11 @@ class MOTEvaluator:
 
                 self.timer.toc()
                 self.timer_counter += 1
-                if self.timer_counter % (50//batch_size) == 0:
+                if self.timer_counter % (50 // batch_size) == 0:
                     logger.info(
                         "Model forward pass {} ({:.2f} fps)".format(
-                            frame_id, (1.0 / max(1e-5, self.timer.average_time) * batch_size)
+                            frame_id,
+                            (1.0 / max(1e-5, self.timer.average_time) * batch_size),
                         )
                     )
                     self.timer = Timer()
@@ -416,7 +418,7 @@ class MOTEvaluator:
                     outputs, self.num_classes, self.confthre, self.nmsthre
                 )
                 if outputs and outputs[0] is not None:
-                    #print(f" >>> {outputs[0].shape[0]} detections")
+                    # print(f" >>> {outputs[0].shape[0]} detections")
                     assert outputs[0].shape[1] == 7  # Yolox output has 7 fields?
 
                 if is_time_record:
@@ -425,9 +427,15 @@ class MOTEvaluator:
 
             output_results = self.convert_to_coco_format(outputs, info_imgs, ids)
             data_list.extend(output_results)
+
+            batch_online_tlwhs = []
+            batch_online_ids = []
+            batch_online_scores = []
+            batch_detections = []
+
             for frame_index in range(len(outputs)):
                 frame_id = info_imgs[2][frame_index]
-                #print(f"frame_id={frame_id}")
+                # print(f"frame_id={frame_id}")
                 # run tracking
                 if outputs[frame_index] is not None:
                     self.track_timer.tic()
@@ -438,25 +446,13 @@ class MOTEvaluator:
                             info_imgs,
                             self.img_size,
                             img,
-                            #origin_imgs[frame_index].cuda(),
+                            # origin_imgs[frame_index].cuda(),
                         )
                         return online_targets, detections
 
-                    if use_autograph:
-                        online_targets, detections = runner.maybe_run_converted(
-                                _inner_update,
-                                outputs,
-                                frame_index,
-                                self.img_size,
-                                imgs[frame_index].cuda()
-                            )
-                    else:
-                        online_targets, detections = _inner_update(
-                            outputs,
-                            frame_index,
-                            self.img_size,
-                            imgs[frame_index].cuda()
-                        )
+                    online_targets, detections = _inner_update(
+                        outputs, frame_index, self.img_size, imgs[frame_index].cuda()
+                    )
 
                     # online_targets, detections = tracker.update(
                     #     outputs[frame_index],
@@ -491,30 +487,37 @@ class MOTEvaluator:
                         )
                         self.track_timer = Timer()
 
-                    if self.online_callback is not None:
-                        detections, online_tlwhs = self.online_callback(
-                            frame_id=frame_id,
-                            online_tlwhs=online_tlwhs,
-                            online_ids=online_ids,
-                            online_scores=online_scores,
-                            detections=detections,
-                            info_imgs=info_imgs,
-                            img=imgs[frame_index].unsqueeze(0),
-                            inscribed_image=inscribed_images[frame_index].unsqueeze(0),
-                            original_img=origin_imgs[frame_index].unsqueeze(0),
-                        )
                     # save results
-                    results.append((frame_id.item(), online_tlwhs, online_ids, online_scores))
-
-                if is_time_record:
-                    track_end = time_synchronized()
-                    track_time += track_end - infer_end
-
-                if cur_iter == len(self.dataloader) - 1:
-                    result_filename = os.path.join(
-                        result_folder, "{}.txt".format(video_names[video_id])
+                    results.append(
+                        (frame_id.item(), online_tlwhs, online_ids, online_scores)
                     )
-                    write_results(result_filename, results)
+
+                    batch_online_tlwhs.append(online_tlwhs)
+                    batch_online_ids.append(online_ids)
+                    batch_online_scores.append(online_scores)
+                    batch_detections.append(detections)
+
+            if self.online_callback is not None:
+                detections, online_tlwhs = self.online_callback(
+                    online_tlwhs=batch_online_tlwhs,
+                    online_ids=batch_online_ids,
+                    online_scores=batch_online_scores,
+                    detections=batch_detections,
+                    info_imgs=info_imgs,
+                    img=imgs,
+                    inscribed_image=inscribed_images,
+                    original_img=origin_imgs,
+                )
+
+            if is_time_record:
+                track_end = time_synchronized()
+                track_time += track_end - infer_end
+
+            if cur_iter == len(self.dataloader) - 1:
+                result_filename = os.path.join(
+                    result_folder, "{}.txt".format(video_names[video_id])
+                )
+                write_results(result_filename, results)
 
         # always write results
         result_filename = os.path.join(
