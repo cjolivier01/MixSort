@@ -30,7 +30,7 @@ echo "TOTAL_BATCH_SIZE=$TOTAL_BATCH_SIZE"
 
 unset NODE_COUNT
 
-#RESUME="--resume"
+RESUME="--resume"
 
 #EXP="exps/example/mot/yolox_x_hockey_train.py"
 #PRETRAINED_CHECKPOINT="pretrained/yolox_x_sports_train.pth"
