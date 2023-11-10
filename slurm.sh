@@ -19,8 +19,8 @@ BATCH_SIZE_PER_GPU=3
 #NODELIST="${NODELIST},mojo-ep2-r02u[01,03,07,11,13,21,25,27,45,47]"
 #NODE_COUNT=33
 
-NODELIST="--nodelist=mojo-26l-r202u[01,03,05,07,11,13,15,17,19,21,25,27,45,47]"
-NODE_COUNT=14
+NODELIST="--nodelist=mojo-26l-r202u[03,05,07,11,13,15,17,19,21,25,27,45,47]"
+NODE_COUNT=13
 
 #NODELIST="--nodelist=mojo-26l-r202u01"
 #NODE_COUNT=1
@@ -40,7 +40,7 @@ unset NODE_COUNT
 #EXP="exps/example/mot/yolox_x_ch.py"
 #EXP="exps/example/mot/yolox_x_ch.py"
 #EXP="exps/example/mot/yolox_x_hockey_train2.py"
-EXP="exps/example/mot/yolox_x_ch_hockey_train.py"
+EXP="exps/example/mot/yolox_x_ch_ht.py"
 #PRETRAINED_CHECKPOINT="pretrained/my_ch.pth.tar"
 #PRETRAINED_CHECKPOINT="YOLOX_outputs/yolox_x_ch/latest_ckpt.pth.tar"
 

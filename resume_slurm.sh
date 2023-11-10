@@ -36,10 +36,11 @@ RESUME="--resume"
 #PRETRAINED_CHECKPOINT="pretrained/yolox_x_sports_train.pth"
 #PRETRAINED_CHECKPOINT="./YOLOX_outputs/yolox_x_hockey_train/latest_ckpt.pth.tar"
 
-EXP="exps/example/mot/yolox_m_ch.py"
+#EXP="exps/example/mot/yolox_m_ch.py"
 #EXP="exps/example/mot/yolox_x_ch.py"
 #EXP="exps/example/mot/yolox_x_ch.py"
 #EXP="exps/example/mot/yolox_x_hockey_train2.py"
+EXP="exps/example/mot/yolox_x_ch_ht.py"
 #PRETRAINED_CHECKPOINT="pretrained/my_ch.pth.tar"
 #PRETRAINED_CHECKPOINT="YOLOX_outputs/yolox_x_ch/latest_ckpt.pth.tar"
 
