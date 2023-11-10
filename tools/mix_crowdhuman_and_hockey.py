@@ -122,7 +122,7 @@ def process(split="train"):
     mix_json["annotations"] = ann_list
     mix_json["videos"] = video_list
     mix_json["categories"] = category_list
-    print("Writing {split} output...")
+    print(f"Writing {split} output...")
     json.dump(mix_json, open(f"datasets/hockeyTraining/annotations/{split}.json", "w"))
 
 
