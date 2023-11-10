@@ -1,14 +1,17 @@
 import json
 import os
 
+_PERSON_CLASS_ID = 1
+_PLAYER_CLASS_ID = 2
+#_REFEREE_CLASS_ID = 3
 
 def process(split="train"):
     print(f"Processing: {split}")
     video_list = list()
     category_list = [
-        {"id": 1, "name": "person"},
-        {"id": 2, "name": "referee"},
-        {"id": 3, "name": "player"},
+        {"id": _PERSON_CLASS_ID, "name": "person"},
+        {"id": _PLAYER_CLASS_ID, "name": "player"},
+        #{"id": _REFEREE_CLASS_ID, "name": "referee"},
     ]
 
     all_image_ids = set()
@@ -59,7 +62,7 @@ def process(split="train"):
         all_annotation_ids.add(annotation_id)
         ann["id"] = annotation_id
         ann["image_id"] = ann["image_id"] + max_img
-        assert ann["category_id"] == 1
+        assert ann["category_id"] == _PERSON_CLASS_ID
         ann_list.append(ann)
 
     video_list.append({"id": max_video, "file_name": f"crowdhuman_{ch_split}"})
@@ -112,7 +115,7 @@ def process(split="train"):
         ann["image_id"] = ann["image_id"] + max_img
         assert ann["category_id"] == 1
         # Set new catagory as 'player'
-        ann["category_id"] = 3
+        ann["category_id"] = _PLAYER_CLASS_ID
         ann_list.append(ann)
 
     print(f"hockeyTrackingDataset-{split}")

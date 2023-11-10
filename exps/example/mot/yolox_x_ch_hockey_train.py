@@ -79,10 +79,10 @@ class Exp(MyExp):
 
         batch_sampler = YoloBatchSampler(
             sampler=sampler,
-            batch_size=batch_size,
             drop_last=False,
             input_dimension=self.input_size,
             mosaic=not no_aug,
+            batch_size=batch_size,
         )
 
         dataloader_kwargs = {"num_workers": self.data_num_workers, "pin_memory": True}
