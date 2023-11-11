@@ -13,7 +13,7 @@ def _as_numpy(t):
     if isinstance(t, list):
         return [_as_numpy(i) for i in t]
     if isinstance(t, torch.Tensor):
-        return t.numpy()
+        return t.cpu().detach().numpy()
     return t
 
 def merge_matches(m1, m2, shape):

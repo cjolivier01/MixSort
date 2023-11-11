@@ -405,19 +405,21 @@ class HMTracker(object):
         #             iou[i][j]=vit[i][j]
         # return iou
 
-    def update(self, output_results, img_info, img_size, img, class_ids):
+    def update(self, output_results, img_info, img_size, img, class_ids, device=None):
+        if device is None:
+            device = img.device
         self.frame_id += 1
         activated_starcks = []
         refind_stracks = []
         lost_stracks = []
         removed_stracks = []
-
         if output_results.shape[1] == 5:
             scores = output_results[:, 4]
             bboxes = output_results[:, :4]
             category_indexes = None
         else:
-            output_results = output_results.cpu().numpy()
+            #output_results = output_results.cpu().numpy()
+            output_results = output_results.cpu()
             scores = output_results[:, 4] * output_results[:, 5]
             bboxes = output_results[:, :4]  # x1y1x2y2
             category_indexes = output_results[:, 6]
@@ -440,7 +442,8 @@ class HMTracker(object):
         #inds_low = scores > 0.1
         inds_high = scores < self.args.track_thresh
 
-        inds_second = np.logical_and(inds_low, inds_high)
+        #inds_second = np.logical_and(inds_low, inds_high)
+        inds_second = torch.logical_and(inds_low, inds_high)
         dets_second = bboxes[inds_second]
         dets = bboxes[remain_inds]
         max_iou_keep = max_iou[remain_inds]
