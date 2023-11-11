@@ -1,5 +1,6 @@
 # vim: expandtab:ts=4:sw=4
 import torch
+import numpy as np
 import scipy.linalg
 
 
@@ -140,16 +141,19 @@ class KalmanFilter(object):
             estimate.
 
         """
-        std = [
+        std = torch.stack([
             self._std_weight_position * mean[3],
             self._std_weight_position * mean[3],
-            1e-1,
-            self._std_weight_position * mean[3]]
+            torch.tensor(1e-1, dtype=mean.dtype, device=mean.device),
+            self._std_weight_position * mean[3]])
         innovation_cov = torch.diag(torch.square(std))
 
-        mean = torch.dot(self._update_mat, mean)
-        covariance = torch.linalg.multi_dot((
-            self._update_mat, covariance, self._update_mat.T))
+        # mean = torch.dot(self._update_mat, mean)
+        # mean_numpy = np.dot(self._update_mat.numpy(), mean.numpy())
+        mean = torch.matmul(self._update_mat, mean)
+        # covariance_numpy = np.linalg.multi_dot((
+        #     self._update_mat.numpy(), covariance.numpy(), self._update_mat.numpy().T))
+        covariance = self._update_mat @ covariance @ self._update_mat.T
         return mean, covariance + innovation_cov
 
     def multi_predict(self, mean, covariance):
@@ -168,26 +172,32 @@ class KalmanFilter(object):
             Returns the mean vector and covariance matrix of the predicted
             state. Unobserved velocities are initialized to 0 mean.
         """
-        std_pos = [
+        std_pos = torch.stack([
             self._std_weight_position * mean[:, 3],
             self._std_weight_position * mean[:, 3],
             1e-2 * torch.ones_like(mean[:, 3]),
             self._std_weight_position * mean[:, 3]]
-        std_vel = [
+        )
+        std_vel = torch.stack([
             self._std_weight_velocity * mean[:, 3],
             self._std_weight_velocity * mean[:, 3],
             1e-5 * torch.ones_like(mean[:, 3]),
             self._std_weight_velocity * mean[:, 3]]
-        sqr = torch.square(torch.r_[std_pos, std_vel]).T
+        )
+
+        sqr = torch.square(torch.cat((std_pos, std_vel), dim=0)).T
 
         motion_cov = []
         for i in range(len(mean)):
             motion_cov.append(torch.diag(sqr[i]))
-        motion_cov = torch.asarray(motion_cov)
+        motion_cov = torch.stack(motion_cov)
 
-        mean = torch.dot(mean, self._motion_mat.T)
-        left = torch.dot(self._motion_mat, covariance).transpose((1, 0, 2))
-        covariance = torch.dot(left, self._motion_mat.T) + motion_cov
+        mean = torch.matmul(mean, self._motion_mat.T)
+        #left_numpy = np.dot(self._motion_mat.numpy(), covariance.numpy()).transpose(1, 0, 2)
+        #pre = torch.matmul(self._motion_mat, covariance)
+        left = torch.matmul(self._motion_mat, covariance)
+        #covariance_numpy = np.dot(left_numpy, self._motion_mat.numpy().T) + motion_cov.numpy()
+        covariance = torch.matmul(left, self._motion_mat.T) + motion_cov
 
         return mean, covariance
 
@@ -216,13 +226,15 @@ class KalmanFilter(object):
         chol_factor, lower = scipy.linalg.cho_factor(
             projected_cov, lower=True, check_finite=False)
         kalman_gain = scipy.linalg.cho_solve(
-            (chol_factor, lower), torch.dot(covariance, self._update_mat.T).T,
+            (chol_factor, lower), torch.matmul(covariance, self._update_mat.T).T,
             check_finite=False).T
+        kalman_gain = torch.from_numpy(kalman_gain).to(mean.device)
         innovation = measurement - projected_mean
 
-        new_mean = mean + torch.dot(innovation, kalman_gain.T)
-        new_covariance = covariance - torch.linalg.multi_dot((
-            kalman_gain, projected_cov, kalman_gain.T))
+        new_mean = mean + torch.matmul(innovation, kalman_gain.T)
+        # new_covariance = covariance - torch.linalg.multi_dot((
+        #     kalman_gain, projected_cov, kalman_gain.T))
+        new_covariance = covariance - kalman_gain @ projected_cov @ kalman_gain.T
         return new_mean, new_covariance
 
     def gating_distance(self, mean, covariance, measurements,

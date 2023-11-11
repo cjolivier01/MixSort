@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import torch
 import scipy
 import lap
 from scipy.spatial.distance import cdist
@@ -7,6 +8,13 @@ from scipy.spatial.distance import cdist
 from cython_bbox import bbox_overlaps as bbox_ious
 from . import kalman_filter
 import time
+
+def _as_numpy(t):
+    if isinstance(t, list):
+        return [_as_numpy(i) for i in t]
+    if isinstance(t, torch.Tensor):
+        return t.numpy()
+    return t
 
 def merge_matches(m1, m2, shape):
     O,P,Q = shape
@@ -63,8 +71,8 @@ def ious(atlbrs, btlbrs):
         return ious
 
     ious = bbox_ious(
-        np.ascontiguousarray(atlbrs, dtype=np.float),
-        np.ascontiguousarray(btlbrs, dtype=np.float)
+        np.ascontiguousarray(_as_numpy(atlbrs), dtype=np.float),
+        np.ascontiguousarray(_as_numpy(btlbrs), dtype=np.float)
     )
 
     return ious
