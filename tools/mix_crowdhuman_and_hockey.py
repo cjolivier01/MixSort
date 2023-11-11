@@ -5,7 +5,7 @@ _PERSON_CLASS_ID = 1
 _PLAYER_CLASS_ID = 2
 #_REFEREE_CLASS_ID = 3
 
-def process(split="train"):
+def process(split="train", video_frame_step: int = 1):
     print(f"Processing: {split}")
     video_list = list()
     category_list = [
@@ -84,6 +84,8 @@ def process(split="train"):
     img_id_count = 0
     anno_count = 0
 
+    video_image_ids_done = set()
+
     for vid in split_json["videos"]:
         old_video_id = vid["id"]
         new_video_id = vid["id"] + max_video
@@ -92,7 +94,9 @@ def process(split="train"):
         all_video_ids.add(new_video_id)
         video_id_mapping[old_video_id] = new_video_id
 
-    for img in split_json["images"]:
+    for i, img in enumerate(split_json["images"]):
+        if i % video_frame_step != 0:
+            continue
         img["file_name"] = (
             f"{base_dir}/hockeyTrackingDataset/{split}/" + img["file_name"]
         )
@@ -106,13 +110,18 @@ def process(split="train"):
         img["next_image_id"] = img["next_image_id"] + max_img
         img["video_id"] = video_id_mapping[img["video_id"]]
         img_list.append(img)
+        video_image_ids_done.add(image_id)
 
     for ann in split_json["annotations"]:
         annotation_id = ann["id"] + max_ann
         assert annotation_id not in all_annotation_ids
+        image_id = ann["image_id"] + max_img
+        if image_id not in video_image_ids_done:
+            continue
+
+        ann["image_id"] = image_id
         all_annotation_ids.add(annotation_id)
         ann["id"] = annotation_id
-        ann["image_id"] = ann["image_id"] + max_img
         assert ann["category_id"] == 1
         # Set new catagory as 'player'
         ann["category_id"] = _PLAYER_CLASS_ID
