@@ -439,7 +439,6 @@ class HMTracker(object):
 
         remain_inds = scores > self.args.track_thresh
         inds_low = scores > self.args.track_thresh_low
-        #inds_low = scores > 0.1
         inds_high = scores < self.args.track_thresh
 
         inds_second = torch.logical_and(inds_low, inds_high)
