@@ -69,7 +69,7 @@ def process(split="train", video_frame_step: int = 1):
     video_list.append({"id": max_video, "file_name": f"crowdhuman_{ch_split}"})
     video_id_mapping[max_video] = max_video
 
-    print(f"crowdhuman-{split}")
+    print(f"crowdhuman-{split}: {len(video_list)} videos, {len(img_list)} images, {len(ann_list)} annotations")
 
     #
     # HDS (video dataset)
@@ -94,6 +94,7 @@ def process(split="train", video_frame_step: int = 1):
         assert old_video_id not in video_id_mapping
         all_video_ids.add(new_video_id)
         video_id_mapping[old_video_id] = new_video_id
+        video_list.append(vid)
 
     for i, img in enumerate(split_json["images"]):
         if i % video_frame_step != 0:
