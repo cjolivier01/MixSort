@@ -26,7 +26,7 @@ from typing import List, Union, Tuple
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
 
-    def __init__(self, tlwh, score, iou):
+    def __init__(self, tlwh, score, iou, category_index: int = 1):
 
         # wait activate
         self._tlwh = np.asarray(tlwh, dtype=np.float)
@@ -35,6 +35,7 @@ class STrack(BaseTrack):
         self.is_activated = False
         self.template = None
         self._iou = iou
+        self._category_index = category_index
 
         self.score = score
         self.tracklet_len = 0
@@ -46,6 +47,10 @@ class STrack(BaseTrack):
         self.mean, self.covariance = self.kalman_filter.predict(
             mean_state, self.covariance
         )
+
+    @property
+    def category_index(self):
+        return self._category_index
 
     @staticmethod
     def multi_predict(stracks):
@@ -407,10 +412,12 @@ class MIXTracker(object):
         if output_results.shape[1] == 5:
             scores = output_results[:, 4]
             bboxes = output_results[:, :4]
+            category_indexes = None
         else:
             output_results = output_results.cpu().numpy()
             scores = output_results[:, 4] * output_results[:, 5]
             bboxes = output_results[:, :4]  # x1y1x2y2
+            category_indexes = output_results[:, 6]
         img_h, img_w = img_info[0], img_info[1]
         scale = min(img_size[0] / float(img_h), img_size[1] / float(img_w))
         bboxes /= scale
@@ -437,12 +444,14 @@ class MIXTracker(object):
         max_iou_second = max_iou[inds_second]
         scores_keep = scores[remain_inds]
         scores_second = scores[inds_second]
+        category_indexes_keep = category_indexes[remain_inds]
+        category_indexes_second = category_indexes[inds_second]
 
         if len(dets) > 0:
             """Detections"""
             detections = [
-                STrack(STrack.tlbr_to_tlwh(tlbr), s, u)
-                for (tlbr, s, u) in zip(dets, scores_keep, max_iou_keep)
+                STrack(STrack.tlbr_to_tlwh(tlbr), s, u, c)
+                for (tlbr, s, u, c) in zip(dets, scores_keep, max_iou_keep, category_indexes_keep)
             ]
         else:
             detections = []
@@ -485,8 +494,8 @@ class MIXTracker(object):
         if len(dets_second) > 0:
             """Detections"""
             detections_second = [
-                STrack(STrack.tlbr_to_tlwh(tlbr), s, u)
-                for (tlbr, s, u) in zip(dets_second, scores_second, max_iou_second)
+                STrack(STrack.tlbr_to_tlwh(tlbr), s, u, c)
+                for (tlbr, s, u, c) in zip(dets_second, scores_second, max_iou_second, category_indexes_second)
             ]
         else:
             detections_second = []
