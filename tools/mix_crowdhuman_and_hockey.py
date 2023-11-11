@@ -143,5 +143,5 @@ def process(split="train", video_frame_step: int = 1):
 
 
 if __name__ == "__main__":
-    process(split="test")
-    process(split="train")
+    process(split="test", video_frame_step=4)
+    process(split="train", video_frame_step=4)
