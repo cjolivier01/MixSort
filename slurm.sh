@@ -56,6 +56,7 @@ srun --tasks-per-node 1 \
       -f "${EXP}" \
       -d ${GPUS_PER_HOST} \
       -b ${TOTAL_BATCH_SIZE} \
+      -o \
       ${START_EPOCH} \
       ${RESUME} \
       --fp16
