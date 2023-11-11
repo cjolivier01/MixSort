@@ -363,7 +363,7 @@ class MOTEvaluator:
             with torch.no_grad():
                 # init tracker
                 frame_id = info_imgs[2][0]
-                video_id = info_imgs[3].item()
+                video_id = info_imgs[3][0].item()
                 img_file_name = info_imgs[4]
                 video_name = img_file_name[0].split("/")[-1]
                 batch_size = imgs.shape[0]
@@ -425,46 +425,31 @@ class MOTEvaluator:
 
             output_results = self.convert_to_coco_format(outputs, info_imgs, ids)
             data_list.extend(output_results)
+
+            # if outputs[0] is not None:
+            #     outputs = postprocess(
+            #         torch.stack(outputs), self.num_classes, self.confthre, self.nmsthre
+            #     )
+
             for frame_index in range(len(outputs)):
                 frame_id = info_imgs[2][frame_index]
                 #print(f"frame_id={frame_id}")
                 # run tracking
                 if outputs[frame_index] is not None:
                     self.track_timer.tic()
-
-                    def _inner_update(outputs, frame_index, img_size, img):
-                        online_targets, detections = tracker.update(
-                            outputs[frame_index],
-                            info_imgs,
-                            self.img_size,
-                            img,
-                            #origin_imgs[frame_index].cuda(),
-                        )
-                        return online_targets, detections
-
-                    if use_autograph:
-                        online_targets, detections = runner.maybe_run_converted(
-                                _inner_update,
-                                outputs,
-                                frame_index,
-                                self.img_size,
-                                imgs[frame_index].cuda()
-                            )
-                    else:
-                        online_targets, detections = _inner_update(
-                            outputs,
-                            frame_index,
-                            self.img_size,
-                            imgs[frame_index].cuda()
-                        )
-
-                    # online_targets, detections = tracker.update(
-                    #     outputs[frame_index],
-                    #     info_imgs,
-                    #     self.img_size,
-                    #     imgs[frame_index].cuda(),
-                    #     #origin_imgs[frame_index].cuda(),
-                    # )
+                    this_img_info = [
+                        info_imgs[0][frame_index],
+                        info_imgs[1][frame_index],
+                        info_imgs[2][frame_index],
+                        info_imgs[3],
+                    ]
+                    online_targets, detections = tracker.update(
+                        outputs[frame_index],
+                        this_img_info,
+                        self.img_size,
+                        imgs[frame_index].cuda(),
+                        #origin_imgs[frame_index].cuda(),
+                    )
 
                     online_tlwhs = []
                     online_ids = []
