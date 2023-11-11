@@ -3,7 +3,8 @@ import os
 
 _PERSON_CLASS_ID = 1
 _PLAYER_CLASS_ID = 2
-#_REFEREE_CLASS_ID = 3
+# _REFEREE_CLASS_ID = 3
+
 
 def process(split="train", video_frame_step: int = 1):
     print(f"Processing: {split}")
@@ -11,7 +12,7 @@ def process(split="train", video_frame_step: int = 1):
     category_list = [
         {"id": _PERSON_CLASS_ID, "name": "person"},
         {"id": _PLAYER_CLASS_ID, "name": "player"},
-        #{"id": _REFEREE_CLASS_ID, "name": "referee"},
+        # {"id": _REFEREE_CLASS_ID, "name": "referee"},
     ]
 
     all_image_ids = set()
@@ -134,7 +135,9 @@ def process(split="train", video_frame_step: int = 1):
     mix_json["annotations"] = ann_list
     mix_json["videos"] = video_list
     mix_json["categories"] = category_list
-    print(f"Writing {split} output...")
+    print(
+        f"Writing {split} output: {len(video_list)} videos, {len(img_list)} images, {len(ann_list)} annotations..."
+    )
     json.dump(mix_json, open(f"datasets/hockeyTraining/annotations/{split}.json", "w"))
 
 
