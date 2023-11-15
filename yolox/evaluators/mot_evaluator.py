@@ -734,7 +734,7 @@ class MOTEvaluator:
                         )
                     # save results
                     results.append(
-                        (frame_id.item(), online_tlwhs, online_ids, online_scores)
+                        (frame_id.item(), online_tlwhs.numpy(), online_ids, torch.stack(online_scores).numpy())
                     )
 
                 if is_time_record:
