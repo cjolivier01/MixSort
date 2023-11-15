@@ -492,8 +492,14 @@ class MOTEvaluator:
                             original_img=origin_imgs[frame_index].unsqueeze(0),
                         )
                     # save results
+                    if isinstance(online_tlwhs, torch.Tensor):
+                        online_tlwhs = online_tlwhs.numpy()
+                    if isinstance(online_ids, torch.Tensor):
+                        online_ids = online_ids.numpy()
+                    if online_scores:
+                        online_scores = torch.stack(online_scores).numpy()
                     results.append(
-                        (frame_id.item(), online_tlwhs.numpy(), online_ids, online_scores)
+                        (frame_id.item(), online_tlwhs, online_ids, online_scores)
                     )
 
                 if is_time_record:
