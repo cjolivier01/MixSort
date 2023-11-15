@@ -21,11 +21,11 @@ class Exp(MyExp):
         # self.input_size = (704, 1280)
         # self.test_size = (704, 1280)
 
-        self.input_size = (544, 1792)
-        self.test_size = (544, 1792)
+        # self.input_size = (544, 1792)
+        # self.test_size = (544, 1792)
 
-        # self.input_size = (416, 1344)
-        # self.test_size = (416, 1344)
+        self.input_size = (416, 1344)
+        self.test_size = (416, 1344)
 
         self.random_size = (18, 32)
         self.max_epoch = 80

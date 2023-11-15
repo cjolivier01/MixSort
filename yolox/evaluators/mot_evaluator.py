@@ -452,6 +452,7 @@ class MOTEvaluator:
                         imgs[frame_index].cuda(),
                         # origin_imgs[frame_index].cuda(),
                     )
+                    #continue
 
                     online_tlwhs = []
                     online_ids = []
@@ -492,7 +493,7 @@ class MOTEvaluator:
                         )
                     # save results
                     results.append(
-                        (frame_id.item(), online_tlwhs, online_ids, online_scores)
+                        (frame_id.item(), online_tlwhs.numpy(), online_ids, online_scores)
                     )
 
                 if is_time_record:
