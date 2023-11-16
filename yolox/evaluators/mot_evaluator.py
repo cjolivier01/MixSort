@@ -88,6 +88,7 @@ class MOTEvaluator:
         nmsthre,
         num_classes,
         online_callback: callable = None,
+        postprocessor = None,
     ):
         """
         Args:
@@ -109,6 +110,12 @@ class MOTEvaluator:
         self.timer_counter = 0
         self.track_timer = Timer()
         self.track_timer_counter = 0
+        self.postprocessor = postprocessor
+
+    def filter_outputs(outputs: torch.Tensor):
+        if self.postprocessor is not None:
+            return self.postprocessor.filter_outputs(outputs)
+        return outputs
 
     def evaluate_byte(
         self,
@@ -496,8 +503,6 @@ class MOTEvaluator:
                         online_tlwhs = online_tlwhs.numpy()
                     if isinstance(online_ids, torch.Tensor):
                         online_ids = online_ids.numpy()
-                    if online_scores:
-                        online_scores = torch.stack(online_scores).numpy()
                     results.append(
                         (frame_id.item(), online_tlwhs, online_ids, online_scores)
                     )
@@ -653,6 +658,8 @@ class MOTEvaluator:
                 with torch.no_grad():
                     outputs = model(imgs)
                     # print(outputs)
+
+                self.filter_outputs(outputs)
 
                 self.timer.toc()
                 self.timer_counter += 1
