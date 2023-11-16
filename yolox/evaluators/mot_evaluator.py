@@ -112,10 +112,10 @@ class MOTEvaluator:
         self.track_timer_counter = 0
         self.postprocessor = postprocessor
 
-    def filter_outputs(outputs: torch.Tensor):
+    def filter_outputs(self, outputs: torch.Tensor, output_results):
         if self.postprocessor is not None:
-            return self.postprocessor.filter_outputs(outputs)
-        return outputs
+            return self.postprocessor.filter_outputs(outputs, output_results)
+        return outputs, output_results
 
     def evaluate_byte(
         self,
@@ -659,8 +659,6 @@ class MOTEvaluator:
                     outputs = model(imgs)
                     # print(outputs)
 
-                self.filter_outputs(outputs)
-
                 self.timer.toc()
                 self.timer_counter += 1
                 if self.timer_counter % (50 // batch_size) == 0:
@@ -687,6 +685,9 @@ class MOTEvaluator:
                     inference_time += infer_end - start
 
             output_results = self.convert_to_coco_format(outputs, info_imgs, ids)
+            outputs, output_results = self.filter_outputs(outputs, output_results)
+
+
             data_list.extend(output_results)
 
             for frame_index in range(len(outputs)):
