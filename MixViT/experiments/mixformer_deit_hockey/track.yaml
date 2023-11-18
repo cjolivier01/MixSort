@@ -35,7 +35,7 @@ DATA:
 MODEL:
   BACKBONE:
     PRETRAINED: True
-    #PRETRAINED_PATH: 'pretrained/MixFormer_sports_train.pth.tar'
+    #PRETRAINED_PATH: 'pretrained/mixformer/MixFormer_sports_train.pth.tar'
     #PRETRAINED_PATH: 'pretrained/mixformer/MixFormerOnlineScore.pth.tar'
     #PRETRAINED_PATH: 'pretrained/MixFormer_soccernet_train.pth.tar'
     #PRETRAINED_PATH: 'pretrained/mixsort/MixFormer_my_ch_to_hockey_tracking_dataset_ep0005.pth.tar'

@@ -41,7 +41,7 @@ MODEL:
   BACKBONE:
     PRETRAINED: False
     #PRETRAINED_PATH: '/YOUR/PRETRAINED/CVT/DIR/CvT-21-384x384-IN-22k.pth' #'/home/cyt/project/CvtT/models/CvT-21-384x384-IN-22k.pth'
-    #PRETRAINED_PATH: "/mnt/data/src/hockeymom_2/models/mixsort/pretrained/MixFormer_sports_train.pth.tar"
+    #PRETRAINED_PATH: "/mnt/data/src/hockeymom_2/models/mixsort/pretrained/mixformer/MixFormer_sports_train.pth.tar"
     INIT: 'trunc_norm'
     NUM_STAGES: 3
     PATCH_SIZE: [ 7, 3, 3 ]
