@@ -88,6 +88,7 @@ def main():
         dist.init_process_group(backend='nccl')
         torch.cuda.set_device(args.local_rank)
     else:
+        assert torch.cuda.is_available()
         torch.cuda.set_device(0)
     run_training(args.script, args.config, cudnn_benchmark=args.cudnn_benchmark,
                  local_rank=args.local_rank, save_dir=args.save_dir, base_seed=args.seed,
