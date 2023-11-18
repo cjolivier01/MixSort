@@ -34,8 +34,9 @@ DATA:
     SAMPLE_PER_EPOCH: 10000
 MODEL:
   BACKBONE:
-    PRETRAINED: True 
+    PRETRAINED: True
     PRETRAINED_PATH: 'pretrained/mixformer/MixFormer_sports_train.pth.tar'
+    #PRETRAINED_PATH: 'pretrained/mixformer/MixFormer_soccernet_train.pth.tar'
     INIT: 'trunc_norm'
     NUM_STAGES: 3
     PATCH_SIZE: [ 7, 3, 3 ]
