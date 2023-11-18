@@ -28,7 +28,7 @@ def names2datasets(name_list: list, settings, image_loader):
     assert isinstance(name_list, list)
     datasets = []
     for name in name_list:
-        assert name in ["SoccerNet_train","SoccerNet_test","DanceTrack_train","DanceTrack_val","SportsMOT_train","SportsMOT_val","SportsMOT_mix","SportsMOT_test","MOT17-train","MOT17-train_half","MOT20-train","MOT17-val_half","LASOT", "GOT10K_vottrain", "GOT10K_votval", "GOT10K_train_full", "COCO17", "VID", "TRACKINGNET", "TNL2k", "hockeyTrackingDataset"]
+        assert name in ["SoccerNet_train","SoccerNet_test","DanceTrack_train","DanceTrack_val","SportsMOT_train","SportsMOT_val","SportsMOT_mix","SportsMOT_test","MOT17-train","MOT17-train_half","MOT20-train","MOT17-val_half","LASOT", "GOT10K_vottrain", "GOT10K_votval", "GOT10K_train_full", "COCO17", "VID", "TRACKINGNET", "TNL2k", "hockeyTrackingDataset", "hockeyTraining"]
         if "SoccerNet" in name:
             datasets.append(SoccerNet(settings.env.soccernet_dir,settings.env.soccernet_anno_dir, split=name.split('_')[1], image_loader=image_loader))
         if "Sports" in name:

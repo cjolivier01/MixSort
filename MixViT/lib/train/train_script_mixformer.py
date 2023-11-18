@@ -82,6 +82,9 @@ def run(settings):
     elif settings.script_name == 'mixformer_deit_hockey':
         # Just use build_mixformer_deit() for now
         net = build_mixformer_deit(cfg)
+    elif settings.script_name == 'mixformer_deit_ch_ht':
+        # Just use build_mixformer_deit() for now
+        net = build_mixformer_deit(cfg)
     else:
         raise ValueError("illegal script name")
 
@@ -117,6 +120,8 @@ def run(settings):
     elif settings.script_name == 'mixformer_deit':
         actor = MixFormerActor(net=net)
     elif settings.script_name == 'mixformer_deit_hockey':
+        actor = MixFormerActor(net=net)
+    elif settings.script_name == 'mixformer_deit_ch_ht':
         actor = MixFormerActor(net=net)
     else:
         raise ValueError("illegal script name")
