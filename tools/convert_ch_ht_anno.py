@@ -9,12 +9,13 @@ def mkdir(path):
 
 DATA_PATH = "datasets/hockeyTraining"
 GT_INPUT_DATA_PATHS = [
-    "datasets/hockeyTrackingDataset",
+    "datasets/hockeyTraining",
 ]
 SPLITS = ["train", "test"]
 OUT_PATH = os.path.join(DATA_PATH, "tracking_annos")
 
 for split in SPLITS:
+    print(f"Split={split}")
     out_path = os.path.join(OUT_PATH, split)
     mkdir(out_path)
     for data_path in GT_INPUT_DATA_PATHS:
@@ -47,26 +48,38 @@ for split in SPLITS:
             # output, there is no need to sort using `frame`
             length = len(os.listdir(os.path.join(data_path, split, seq, "img1")))
 
-            for id in players.keys():
+            player_ids = sorted(players.keys())
+            next_player_id = player_ids[-1] + 1
+            player_id_mapping = dict()
+
+            for id in player_ids:
+                player_id_mapping[id] = id
                 this_player = players[id]
+                player_frames = sorted(this_player.keys())
                 with open(os.path.join(out_path, f"{seq}-{id:0>3d}.txt"), "w") as f:
+                    exited_frame = True
+                    frames_found = 0
+                    enter_count = 0
                     # start from frame 1
-                    i = 0
                     for cur in range(1, length + 1):
+                        # Pick up any player id mapping
+                        id = player_id_mapping[id]
                         try:
-                            frame, x, y, w, h = this_player[i][cur]
+                            frame, x, y, w, h = this_player[cur]
+                            if exited_frame:
+                                enter_count += 1
+                                #print(f">>> Player {seq}.{id} ENTER the frame at frame {cur})")
+                                exited_frame = False
+                            frames_found += 1
                         except:
-                            f.write("0,0,0,0\n")
+                            if frames_found > 0 and not exited_frame:
+                                #print(f"<<< Player {seq}.{id} EXIT the frame at frame {cur}")
+                                exited_frame = True
+                            f.write(f"0,0,0,0\n")
+                            # Off-screen
                             continue
-                            #i = cur
-                            #break
-                            pass
                         if frame != cur:
                             #f.write("0,0,0,0\n")
                             assert False
                         else:
                             f.write(f"{x},{y},{w},{h}\n")
-                            i += 1
-                    while i <= length:
-                        f.write("0,0,0,0\n")
-                        i += 1
