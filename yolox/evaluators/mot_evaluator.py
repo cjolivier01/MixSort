@@ -542,6 +542,7 @@ class MOTEvaluator:
         decoder=None,
         test_size=None,
         result_folder=None,
+        evaluate: bool = False,
     ):
         """
         COCO average precision (AP) Evaluation. Iterate inference on the test dataset
@@ -780,6 +781,8 @@ class MOTEvaluator:
             data_list = list(itertools.chain(*data_list))
             torch.distributed.reduce(statistics, dst=0)
 
+        if not evaluate:
+            return data_list, statistics
         eval_results = self.evaluate_prediction(data_list, statistics)
         synchronize()
         return eval_results
