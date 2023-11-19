@@ -110,6 +110,8 @@ class MOTEvaluator:
         self.timer_counter = 0
         self.track_timer = Timer()
         self.track_timer_counter = 0
+        self.preproc_timer = Timer()
+        self.preproc_timer_counter = 0
         self.postprocessor = postprocessor
 
     def filter_outputs(self, outputs: torch.Tensor, output_results):
@@ -403,6 +405,9 @@ class MOTEvaluator:
                     self.timer = Timer()
                 self.timer.tic()
 
+                self.preproc_timer.tic()
+                self.preproc_timer_counter += 1
+
                 with torch.no_grad():
                     outputs = model(imgs)
                     # print(outputs)
@@ -439,7 +444,7 @@ class MOTEvaluator:
             #     outputs = postprocess(
             #         torch.stack(outputs), self.num_classes, self.confthre, self.nmsthre
             #     )
-
+            frame_count = len(outputs)
             for frame_index in range(len(outputs)):
                 frame_id = info_imgs[2][frame_index]
                 # print(f"frame_id={frame_id}")
@@ -485,7 +490,7 @@ class MOTEvaluator:
                             )
                         )
                         self.track_timer = Timer()
-
+                    self.preproc_timer.toc()
                     if self.online_callback is not None:
                         detections, online_tlwhs = self.online_callback(
                             frame_id=frame_id,
@@ -498,6 +503,8 @@ class MOTEvaluator:
                             inscribed_image=inscribed_images[frame_index].unsqueeze(0),
                             original_img=origin_imgs[frame_index].unsqueeze(0),
                         )
+                    if frame_index < frame_count - 1:
+                        self.preproc_timer.tic()
                     # save results
                     if isinstance(online_tlwhs, torch.Tensor):
                         online_tlwhs = online_tlwhs.numpy()
@@ -516,6 +523,17 @@ class MOTEvaluator:
                         result_folder, "{}.txt".format(video_names[video_id])
                     )
                     write_results(result_filename, results)
+                # end frame loop
+            # After frame loop
+            if self.preproc_timer_counter % 20 == 0:
+                logger.info(
+                    ">>> Preproc {} ({:.2f} fps)".format(
+                        frame_id, frame_count * 1.0 / max(1e-5, self.preproc_timer.average_time)
+                    )
+                )
+                self.preproc_timer = Timer()
+
+
 
         # always write results
         result_filename = os.path.join(
@@ -656,6 +674,9 @@ class MOTEvaluator:
                     self.timer = Timer()
                 self.timer.tic()
 
+                self.preproc_timer.tic()
+                self.preproc_timer_counter += 1
+
                 with torch.no_grad():
                     outputs = model(imgs)
                     # print(outputs)
@@ -691,6 +712,7 @@ class MOTEvaluator:
 
             data_list.extend(output_results)
 
+            frame_count = len(outputs)
             for frame_index in range(len(outputs)):
                 frame_id = info_imgs[2][frame_index]
                 # run tracking
@@ -736,6 +758,7 @@ class MOTEvaluator:
                         )
                         self.track_timer = Timer()
 
+                    self.preproc_timer.toc()
                     if self.online_callback is not None:
                         detections, online_tlwhs = self.online_callback(
                             frame_id=frame_id,
@@ -748,6 +771,10 @@ class MOTEvaluator:
                             inscribed_image=inscribed_images[frame_index].unsqueeze(0),
                             original_img=origin_imgs[frame_index].unsqueeze(0),
                         )
+
+                    if frame_index < frame_count - 1:
+                        self.preproc_timer.tic()
+
                     # save results
                     if isinstance(online_tlwhs, torch.Tensor):
                         online_tlwhs = online_tlwhs.numpy()
@@ -768,6 +795,16 @@ class MOTEvaluator:
                         result_folder, "{}.txt".format(video_names[video_id])
                     )
                     write_results(result_filename, results)
+
+                # end frame loop
+            # After frame loop
+            if self.preproc_timer_counter % 20 == 0:
+                logger.info(
+                    ">>> Preproc {} ({:.2f} fps)".format(
+                        frame_id, frame_count * 1.0 / max(1e-5, self.preproc_timer.average_time)
+                    )
+                )
+                self.preproc_timer = Timer()
 
         # always write results
         result_filename = os.path.join(
