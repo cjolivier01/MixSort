@@ -88,7 +88,7 @@ class MOTEvaluator:
         nmsthre,
         num_classes,
         online_callback: callable = None,
-        postprocessor = None,
+        postprocessor=None,
     ):
         """
         Args:
@@ -464,7 +464,7 @@ class MOTEvaluator:
                         imgs[frame_index].cuda(),
                         # origin_imgs[frame_index].cuda(),
                     )
-                    #continue
+                    # continue
 
                     online_tlwhs = []
                     online_ids = []
@@ -528,12 +528,11 @@ class MOTEvaluator:
             if self.preproc_timer_counter % 20 == 0:
                 logger.info(
                     ">>> Preproc {} ({:.2f} fps)".format(
-                        frame_id, frame_count * 1.0 / max(1e-5, self.preproc_timer.average_time)
+                        frame_id,
+                        frame_count * 1.0 / max(1e-5, self.preproc_timer.average_time),
                     )
                 )
                 self.preproc_timer = Timer()
-
-
 
         # always write results
         result_filename = os.path.join(
@@ -687,7 +686,7 @@ class MOTEvaluator:
                     logger.info(
                         "Model forward pass {} ({:.2f} fps)".format(
                             frame_id,
-                            (1.0 / max(1e-5, self.timer.average_time) * batch_size),
+                            batch_size * 1.0 / max(1e-5, self.timer.average_time),
                         )
                     )
                     self.timer = Timer()
@@ -708,7 +707,6 @@ class MOTEvaluator:
 
             output_results = self.convert_to_coco_format(outputs, info_imgs, ids)
             outputs, output_results = self.filter_outputs(outputs, output_results)
-
 
             data_list.extend(output_results)
 
@@ -758,7 +756,7 @@ class MOTEvaluator:
                         )
                         self.track_timer = Timer()
 
-                    self.preproc_timer.toc()
+                    # self.preproc_timer.toc()
                     if self.online_callback is not None:
                         detections, online_tlwhs = self.online_callback(
                             frame_id=frame_id,
@@ -772,8 +770,8 @@ class MOTEvaluator:
                             original_img=origin_imgs[frame_index].unsqueeze(0),
                         )
 
-                    if frame_index < frame_count - 1:
-                        self.preproc_timer.tic()
+                    # if frame_index < frame_count - 1:
+                    #     self.preproc_timer.tic()
 
                     # save results
                     if isinstance(online_tlwhs, torch.Tensor):
@@ -797,11 +795,15 @@ class MOTEvaluator:
                     write_results(result_filename, results)
 
                 # end frame loop
+            #
             # After frame loop
+            #
+            self.preproc_timer.toc()
             if self.preproc_timer_counter % 20 == 0:
                 logger.info(
                     ">>> Preproc {} ({:.2f} fps)".format(
-                        frame_id, frame_count * 1.0 / max(1e-5, self.preproc_timer.average_time)
+                        frame_id,
+                        batch_size * 1.0 / max(1e-5, self.preproc_timer.average_time),
                     )
                 )
                 self.preproc_timer = Timer()
