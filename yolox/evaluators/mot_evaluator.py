@@ -722,6 +722,7 @@ class MOTEvaluator:
                         info_imgs[2][frame_index],
                         info_imgs[3],
                     ]
+                    # TODO: scale outputs right away
                     online_targets, detections = tracker.update(
                         outputs[frame_index],
                         this_img_info,
