@@ -18,8 +18,8 @@ class Exp(MyExp):
         self.train_ann = "train.json"
         self.val_ann = "test.json"   # change to train.json when running on training set
 
-        #size = (416, 1344)
-        size = (320, 896)
+        size = (416, 1344)
+        #size = (320, 896)
 
         self.input_size = size
         self.test_size = size
