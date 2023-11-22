@@ -9,7 +9,7 @@ from torchvision.transforms.functional import resized_crop, normalize
 import math
 from torch.utils.tensorboard import SummaryWriter
 
-#from .kalman_filter import KalmanFilter
+# from .kalman_filter import KalmanFilter
 from .pt_kalman_filter import KalmanFilter
 from . import matching
 from .basetrack import BaseTrack, TrackState
@@ -26,11 +26,11 @@ from typing import List, Union, Tuple
 # import torch_kalman
 # from torch_kalman.kalman_filter import KalmanFilter as PyTorchKalmanFilter
 
+
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
 
     def __init__(self, tlwh, score, iou, class_id: int):
-
         # wait activate
         self._tlwh = torch.tensor(tlwh, dtype=torch.float32)
         self.kalman_filter = None
@@ -219,7 +219,7 @@ class HMTracker(object):
         self.network.eval()
 
     def re_init(self, args, frame_rate=30):
-        BaseTrack._count = 0 # set to 0 for new video
+        BaseTrack._count = 0  # set to 0 for new video
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
         self.removed_stracks = []  # type: list[STrack]
@@ -244,9 +244,14 @@ class HMTracker(object):
             box[2:4] = box[0:2] + box[2:4]
         logger.add_image_with_boxes("search", search, search_box)
 
-    def visualize_box(self, logger: SummaryWriter, img, dets:List[STrack], name):
+    def visualize_box(self, logger: SummaryWriter, img, dets: List[STrack], name):
         # utils for debugging
-        logger.add_image_with_boxes(name, img, np.array([s.tlbr for s in dets]),labels=[str(i) for i in range(len(dets))])
+        logger.add_image_with_boxes(
+            name,
+            img,
+            np.array([s.tlbr for s in dets]),
+            labels=[str(i) for i in range(len(dets))],
+        )
 
     def crop_and_resize(
         self, img: torch.Tensor, center: np.ndarray, s: str, annos: torch.Tensor = None
@@ -266,7 +271,7 @@ class HMTracker(object):
         center = center.to(torch.int32)
         search_area_factor = self.settings.search_area_factor[s]
         output_sz = self.settings.output_sz[s]
-        #x, y, w, h = [int(i) for i in center]
+        # x, y, w, h = [int(i) for i in center]
         x, y, w, h = center.to(torch.int32).unbind()
         crop_sz = torch.ceil(torch.sqrt(w * h) * search_area_factor)
 
@@ -325,16 +330,14 @@ class HMTracker(object):
         # search_bbox = torch.stack(
         #     [torch.from_numpy(det.tlwh.astype(torch.int32)) for det in dets]
         # )
-        search_bbox = torch.stack(
-            [det.tlwh.to(torch.int32) for det in dets]
-        )
+        search_bbox = torch.stack([det.tlwh.to(torch.int32) for det in dets])
         search_imgs = []
         search_boxes = []
         # vit dist
-        #self.logger=SummaryWriter('./debug_tensorboard')
-        #self.visualize(self.logger,template_imgs[0],search_img,search_box.clone())
-        #self.visualize_box(self.logger,img,stracks,"stracks")
-        #self.visualize_box(self.logger,img,dets,"dets")
+        # self.logger=SummaryWriter('./debug_tensorboard')
+        # self.visualize(self.logger,template_imgs[0],search_img,search_box.clone())
+        # self.visualize_box(self.logger,img,stracks,"stracks")
+        # self.visualize_box(self.logger,img,dets,"dets")
         vit = np.zeros((len(stracks), len(dets)), dtype=np.float64)
 
         def _untuple(t):
@@ -413,12 +416,15 @@ class HMTracker(object):
         refind_stracks = []
         lost_stracks = []
         removed_stracks = []
+
+        output_results = output_results[0].unsqueeze(0)
+
         if output_results.shape[1] == 5:
             scores = output_results[:, 4]
             bboxes = output_results[:, :4]
             category_indexes = None
         else:
-            #output_results = output_results.cpu().numpy()
+            # output_results = output_results.cpu().numpy()
             output_results = output_results.cpu()
             scores = output_results[:, 4] * output_results[:, 5]
             bboxes = output_results[:, :4]  # x1y1x2y2
@@ -429,13 +435,16 @@ class HMTracker(object):
 
         # compute all ious
         all_dets = [x for x in bboxes]
+
         iou = matching.ious(all_dets, all_dets)
         # compute max iou for every det
         max_iou = []
         for i in range(len(all_dets)):
             iou[i][i] = 0
-            max_iou.append(iou[i].max())
-        max_iou = np.array(max_iou)
+            max_iou.append(
+                torch.tensor(iou[i].max(), dtype=torch.float32, device=bboxes.device)
+            )
+        max_iou = torch.stack(max_iou)
 
         remain_inds = scores > self.args.track_thresh
         inds_low = scores > self.args.track_thresh_low
@@ -455,7 +464,9 @@ class HMTracker(object):
             """Detections"""
             detections = [
                 STrack(STrack.tlbr_to_tlwh(tlbr), s, u, class_ids[int(c)])
-                for (tlbr, s, u, c) in zip(dets, scores_keep, max_iou_keep, category_indexes_keep)
+                for (tlbr, s, u, c) in zip(
+                    dets, scores_keep, max_iou_keep, category_indexes_keep
+                )
             ]
         else:
             detections = []
@@ -499,7 +510,9 @@ class HMTracker(object):
             """Detections"""
             detections_second = [
                 STrack(STrack.tlbr_to_tlwh(tlbr), s, u, class_ids[int(c)])
-                for (tlbr, s, u, c) in zip(dets_second, scores_second, max_iou_second, category_indexes_second)
+                for (tlbr, s, u, c) in zip(
+                    dets_second, scores_second, max_iou_second, category_indexes_second
+                )
             ]
         else:
             detections_second = []
