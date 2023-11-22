@@ -417,8 +417,6 @@ class HMTracker(object):
         lost_stracks = []
         removed_stracks = []
 
-        output_results = output_results[0].unsqueeze(0)
-
         if output_results.shape[1] == 5:
             scores = output_results[:, 4]
             bboxes = output_results[:, :4]
