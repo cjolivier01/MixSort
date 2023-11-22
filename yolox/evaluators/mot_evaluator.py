@@ -616,8 +616,6 @@ class MOTEvaluator:
         track_time = 0
         n_samples = len(self.dataloader) - 1
 
-        use_autograph = False
-
         if trt_file is not None:
             from torch2trt import TRTModule
 
@@ -697,6 +695,7 @@ class MOTEvaluator:
                 outputs = postprocess(
                     outputs, self.num_classes, self.confthre, self.nmsthre
                 )
+
                 if outputs and outputs[0] is not None:
                     # print(f" >>> {outputs[0].shape[0]} detections")
                     assert outputs[0].shape[1] == 7  # Yolox output has 7 fields
@@ -710,39 +709,29 @@ class MOTEvaluator:
                         outputs,
                     )
 
+            # outputs[1] = None
             output_results = self.convert_to_coco_format_post_scale(outputs, ids)
             outputs, output_results = self.filter_outputs(outputs, output_results)
 
             data_list.extend(output_results)
 
-            frame_count = len(outputs)
             for frame_index in range(len(outputs)):
                 frame_id = info_imgs[2][frame_index]
+
+                online_tlwhs = []
+                online_ids = []
+                online_scores = []
+
                 # run tracking
                 if outputs[frame_index] is not None:
                     self.track_timer.tic()
-                    this_img_info = [
-                        #info_imgs[0][frame_index],
-                        #info_imgs[1][frame_index],
-                        origin_imgs[frame_index].shape[0],
-                        origin_imgs[frame_index].shape[1],
-                        info_imgs[2][frame_index],
-                        info_imgs[3],
-                    ]
                     # TODO: scale outputs right away
                     online_targets, detections = tracker.update(
                         outputs[frame_index],
-                        this_img_info,
-                        #self.img_size,
-                        origin_imgs[frame_index].shape,
-                        #imgs[frame_index].cuda(),
                         origin_imgs[frame_index].cuda(),
                         self.dataloader.dataset.class_ids,
                     )
 
-                    online_tlwhs = []
-                    online_ids = []
-                    online_scores = []
                     # if online_targets:
                     #     print(f"{len(online_targets)} targets, {len(detections)} detections")
                     for t in online_targets:
@@ -764,19 +753,21 @@ class MOTEvaluator:
                             )
                         )
                         self.track_timer = Timer()
+                else:
+                    print(f"No tracking items on frame {frame_id}")
 
-                    if self.online_callback is not None:
-                        detections, online_tlwhs = self.online_callback(
-                            frame_id=frame_id,
-                            online_tlwhs=online_tlwhs,
-                            online_ids=online_ids,
-                            online_scores=online_scores,
-                            detections=detections,
-                            info_imgs=info_imgs,
-                            letterbox_img=imgs[frame_index].unsqueeze(0),
-                            inscribed_img=inscribed_images[frame_index].unsqueeze(0),
-                            original_img=origin_imgs[frame_index].unsqueeze(0),
-                        )
+                if self.online_callback is not None:
+                    detections, online_tlwhs = self.online_callback(
+                        frame_id=frame_id,
+                        online_tlwhs=online_tlwhs,
+                        online_ids=online_ids,
+                        online_scores=online_scores,
+                        detections=detections,
+                        info_imgs=info_imgs,
+                        letterbox_img=imgs[frame_index].unsqueeze(0),
+                        inscribed_img=inscribed_images[frame_index].unsqueeze(0),
+                        original_img=origin_imgs[frame_index].unsqueeze(0),
+                    )
 
                     # save results
                     if isinstance(online_tlwhs, torch.Tensor):
@@ -1616,6 +1607,7 @@ class MOTEvaluator:
         data_list = []
         for output, img_id in zip(outputs, ids):
             if output is None:
+                data_list.append(None)
                 continue
             output = output.cpu()
             bboxes = output[:, 0:4]

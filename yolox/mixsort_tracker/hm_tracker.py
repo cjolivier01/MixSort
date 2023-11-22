@@ -408,7 +408,7 @@ class HMTracker(object):
         #             iou[i][j]=vit[i][j]
         # return iou
 
-    def update(self, output_results, img_info, img_size, img, class_ids, device=None):
+    def update(self, output_results, img, class_ids, device=None):
         if device is None:
             device = img.device
         self.frame_id += 1
@@ -427,9 +427,6 @@ class HMTracker(object):
             scores = output_results[:, 4] * output_results[:, 5]
             bboxes = output_results[:, :4]  # x1y1x2y2
             category_indexes = output_results[:, 6]
-        img_h, img_w = img_info[0], img_info[1]
-        scale = min(img_size[0] / float(img_h), img_size[1] / float(img_w))
-        bboxes /= scale
 
         # compute all ious
         all_dets = [x for x in bboxes]
