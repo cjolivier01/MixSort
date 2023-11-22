@@ -705,8 +705,10 @@ class MOTEvaluator:
                     inference_time += infer_end - start
 
                 if self.postprocessor is not None:
-                    outputs = self.dataloader.scale_letterbox_to_original_image_coordinates(
-                        outputs,
+                    outputs = (
+                        self.dataloader.scale_letterbox_to_original_image_coordinates(
+                            outputs,
+                        )
                     )
 
             # outputs[1] = None
