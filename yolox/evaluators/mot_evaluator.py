@@ -706,13 +706,8 @@ class MOTEvaluator:
                     inference_time += infer_end - start
 
                 if self.postprocessor is not None:
-                    outputs = self.postprocessor.map_to_original_image_coords(
+                    outputs = self.dataloader.scale_letterbox_to_original_image_coordinates(
                         outputs,
-                        frame_id,
-                        info_imgs,
-                        letterbox_img=imgs,
-                        inscribed_img=inscribed_images,
-                        original_img=origin_imgs,
                     )
 
             output_results = self.convert_to_coco_format_post_scale(outputs, ids)
