@@ -699,13 +699,23 @@ class MOTEvaluator:
                 )
                 if outputs and outputs[0] is not None:
                     # print(f" >>> {outputs[0].shape[0]} detections")
-                    assert outputs[0].shape[1] == 7  # Yolox output has 7 fields?
+                    assert outputs[0].shape[1] == 7  # Yolox output has 7 fields
 
                 if is_time_record:
                     infer_end = time_synchronized()
                     inference_time += infer_end - start
 
-            output_results = self.convert_to_coco_format(outputs, info_imgs, ids)
+                if self.postprocessor is not None:
+                    outputs = self.postprocessor.map_to_original_image_coords(
+                        outputs,
+                        frame_id,
+                        info_imgs,
+                        letterbox_img=imgs,
+                        inscribed_img=inscribed_images,
+                        original_img=origin_imgs,
+                    )
+
+            output_results = self.convert_to_coco_format_post_scale(outputs, ids)
             outputs, output_results = self.filter_outputs(outputs, output_results)
 
             data_list.extend(output_results)
@@ -717,8 +727,10 @@ class MOTEvaluator:
                 if outputs[frame_index] is not None:
                     self.track_timer.tic()
                     this_img_info = [
-                        info_imgs[0][frame_index],
-                        info_imgs[1][frame_index],
+                        #info_imgs[0][frame_index],
+                        #info_imgs[1][frame_index],
+                        origin_imgs[frame_index].shape[0],
+                        origin_imgs[frame_index].shape[1],
                         info_imgs[2][frame_index],
                         info_imgs[3],
                     ]
@@ -726,9 +738,10 @@ class MOTEvaluator:
                     online_targets, detections = tracker.update(
                         outputs[frame_index],
                         this_img_info,
-                        self.img_size,
-                        imgs[frame_index].cuda(),
-                        # origin_imgs[frame_index].cuda(),
+                        #self.img_size,
+                        origin_imgs[frame_index].shape,
+                        #imgs[frame_index].cuda(),
+                        origin_imgs[frame_index].cuda(),
                         self.dataloader.dataset.class_ids,
                     )
 
@@ -757,7 +770,6 @@ class MOTEvaluator:
                         )
                         self.track_timer = Timer()
 
-                    # self.preproc_timer.toc()
                     if self.online_callback is not None:
                         detections, online_tlwhs = self.online_callback(
                             frame_id=frame_id,
@@ -766,13 +778,10 @@ class MOTEvaluator:
                             online_scores=online_scores,
                             detections=detections,
                             info_imgs=info_imgs,
-                            img=imgs[frame_index].unsqueeze(0),
-                            inscribed_image=inscribed_images[frame_index].unsqueeze(0),
+                            letterbox_img=imgs[frame_index].unsqueeze(0),
+                            inscribed_img=inscribed_images[frame_index].unsqueeze(0),
                             original_img=origin_imgs[frame_index].unsqueeze(0),
                         )
-
-                    # if frame_index < frame_count - 1:
-                    #     self.preproc_timer.tic()
 
                     # save results
                     if isinstance(online_tlwhs, torch.Tensor):
@@ -1607,6 +1616,30 @@ class MOTEvaluator:
         eval_results = self.evaluate_prediction(data_list, statistics)
         synchronize()
         return eval_results
+
+    def convert_to_coco_format_post_scale(self, outputs, ids):
+        data_list = []
+        for output, img_id in zip(outputs, ids):
+            if output is None:
+                continue
+            output = output.cpu()
+            bboxes = output[:, 0:4]
+
+            bboxes = xyxy2xywh(bboxes)
+
+            cls = output[:, 6]
+            scores = output[:, 4] * output[:, 5]
+            for ind in range(bboxes.shape[0]):
+                label = self.dataloader.dataset.class_ids[int(cls[ind])]
+                pred_data = {
+                    "image_id": int(img_id),
+                    "category_id": label,
+                    "bbox": bboxes[ind].numpy().tolist(),
+                    "score": scores[ind].numpy().item(),
+                    "segmentation": [],
+                }  # COCO json format
+                data_list.append(pred_data)
+        return data_list
 
     def convert_to_coco_format(self, outputs, info_imgs, ids):
         data_list = []
