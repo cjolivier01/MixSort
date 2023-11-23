@@ -722,6 +722,7 @@ class MOTEvaluator:
                 online_tlwhs = []
                 online_ids = []
                 online_scores = []
+                detections = []
 
                 # run tracking
                 if outputs[frame_index] is not None:

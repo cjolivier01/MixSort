@@ -189,7 +189,7 @@ class HMTracker(object):
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
         self.removed_stracks = []  # type: list[STrack]
-        self.removed_strack_ids = set()
+        #self.removed_strack_ids = set()
 
         self.update_counter = 0
 
@@ -619,15 +619,24 @@ class HMTracker(object):
         #self.lost_stracks = sub_stracks(self.lost_stracks, self.removed_stracks)
         #self.lost_stracks = sub_stracks_by_idset(self.lost_stracks, self.removed_strack_ids)
         for r in removed_stracks:
-            self.removed_strack_ids.add(r.track_id)
+            #self.removed_strack_ids.add(r.track_id)
             r.remove()
         self.removed_stracks.extend(removed_stracks)
 
-        self.lost_stracks = sub_stracks_by_idset(self.lost_stracks, self.removed_strack_ids)
+        #self.lost_stracks = sub_stracks_by_idset(self.lost_stracks, self.removed_strack_ids)
+        self.lost_stracks = sub_stracks(self.lost_stracks, removed_stracks)
 
         self.tracked_stracks, self.lost_stracks = remove_duplicate_stracks(
             self.tracked_stracks, self.lost_stracks
         )
+
+        if False:
+            # assert we don't need self.removed_strack_ids
+            for t in self.tracked_stracks:
+                assert t.track_id not in self.removed_strack_ids
+            for t in self.lost_stracks:
+                assert t.track_id not in self.removed_strack_ids
+
         # get scores of lost tracks
         output_stracks = [track for track in self.tracked_stracks if track.is_activated]
         self.last_img = img
