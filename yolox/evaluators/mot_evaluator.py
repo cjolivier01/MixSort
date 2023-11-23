@@ -697,7 +697,6 @@ class MOTEvaluator:
                 )
 
                 if outputs and outputs[0] is not None:
-                    # print(f" >>> {outputs[0].shape[0]} detections")
                     assert outputs[0].shape[1] == 7  # Yolox output has 7 fields
 
                 if is_time_record:
@@ -727,15 +726,12 @@ class MOTEvaluator:
                 # run tracking
                 if outputs[frame_index] is not None:
                     self.track_timer.tic()
-                    # TODO: scale outputs right away
                     online_targets, detections = tracker.update(
                         outputs[frame_index],
                         origin_imgs[frame_index].cuda(),
                         self.dataloader.dataset.class_ids,
                     )
 
-                    # if online_targets:
-                    #     print(f"{len(online_targets)} targets, {len(detections)} detections")
                     for t in online_targets:
                         tlwh = t.tlwh
                         tid = t.track_id
@@ -746,17 +742,18 @@ class MOTEvaluator:
                             online_scores.append(t.score)
                         else:
                             print("Skipping target")
-                    self.track_timer.toc()
-                    self.track_timer_counter += 1
-                    if self.track_timer_counter % 50 == 0:
-                        logger.info(
-                            "Tracking {} ({:.2f} fps)".format(
-                                frame_id, 1.0 / max(1e-5, self.track_timer.average_time)
-                            )
-                        )
-                        self.track_timer = Timer()
                 else:
                     print(f"No tracking items on frame {frame_id}")
+
+                self.track_timer.toc()
+                self.track_timer_counter += 1
+                if self.track_timer_counter % 50 == 0:
+                    logger.info(
+                        "Tracking {} ({:.2f} fps)".format(
+                            frame_id, 1.0 / max(1e-5, self.track_timer.average_time)
+                        )
+                    )
+                    self.track_timer = Timer()
 
                 if self.online_callback is not None:
                     detections, online_tlwhs = self.online_callback(
