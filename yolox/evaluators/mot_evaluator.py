@@ -286,269 +286,269 @@ class MOTEvaluator:
         synchronize()
         return eval_results
 
-    def evaluate_mixsort(
-        self,
-        model,
-        distributed=False,
-        half=False,
-        trt_file=None,
-        decoder=None,
-        test_size=None,
-        result_folder=None,
-    ):
-        """
-        COCO average precision (AP) Evaluation. Iterate inference on the test dataset
-        and the results are evaluated by COCO API.
+    # def evaluate_mixsort(
+    #     self,
+    #     model,
+    #     distributed=False,
+    #     half=False,
+    #     trt_file=None,
+    #     decoder=None,
+    #     test_size=None,
+    #     result_folder=None,
+    # ):
+    #     """
+    #     COCO average precision (AP) Evaluation. Iterate inference on the test dataset
+    #     and the results are evaluated by COCO API.
 
-        NOTE: This function will change training mode to False, please save states if needed.
+    #     NOTE: This function will change training mode to False, please save states if needed.
 
-        Args:
-            model : model to evaluate.
+    #     Args:
+    #         model : model to evaluate.
 
-        Returns:
-            ap50_95 (float) : COCO AP of IoU=50:95
-            ap50 (float) : COCO AP of IoU=50
-            summary (sr): summary info of evaluation.
-        """
-        if self.args.iou_only:
-            from yolox.mixsort_tracker.mixsort_iou_tracker import MIXTracker
-        else:
-            from yolox.mixsort_tracker.mixsort_tracker import MIXTracker
+    #     Returns:
+    #         ap50_95 (float) : COCO AP of IoU=50:95
+    #         ap50 (float) : COCO AP of IoU=50
+    #         summary (sr): summary info of evaluation.
+    #     """
+    #     if self.args.iou_only:
+    #         from yolox.mixsort_tracker.mixsort_iou_tracker import MIXTracker
+    #     else:
+    #         from yolox.mixsort_tracker.mixsort_tracker import MIXTracker
 
-        # like ByteTrack, we use different setting for different videos
-        setting = {
-            "MOT17-01-FRCNN": {"track_buffer": 27, "track_thresh": 0.6275},
-            "MOT17-03-FRCNN": {"track_buffer": 31, "track_thresh": 0.5722},
-            "MOT17-06-FRCNN": {"track_buffer": 16, "track_thresh": 0.5446},
-            "MOT17-07-FRCNN": {"track_buffer": 24, "track_thresh": 0.5939},
-            "MOT17-08-FRCNN": {"track_buffer": 24, "track_thresh": 0.7449},
-            "MOT17-12-FRCNN": {"track_buffer": 29, "track_thresh": 0.7036},
-            "MOT17-14-FRCNN": {"track_buffer": 28, "track_thresh": 0.5436},
-        }
+    #     # like ByteTrack, we use different setting for different videos
+    #     setting = {
+    #         "MOT17-01-FRCNN": {"track_buffer": 27, "track_thresh": 0.6275},
+    #         "MOT17-03-FRCNN": {"track_buffer": 31, "track_thresh": 0.5722},
+    #         "MOT17-06-FRCNN": {"track_buffer": 16, "track_thresh": 0.5446},
+    #         "MOT17-07-FRCNN": {"track_buffer": 24, "track_thresh": 0.5939},
+    #         "MOT17-08-FRCNN": {"track_buffer": 24, "track_thresh": 0.7449},
+    #         "MOT17-12-FRCNN": {"track_buffer": 29, "track_thresh": 0.7036},
+    #         "MOT17-14-FRCNN": {"track_buffer": 28, "track_thresh": 0.5436},
+    #     }
 
-        def set_args(args, video):
-            if video not in setting.keys():
-                return args
-            for k, v in setting[video].items():
-                args.__setattr__(k, v)
-            return args
+    #     def set_args(args, video):
+    #         if video not in setting.keys():
+    #             return args
+    #         for k, v in setting[video].items():
+    #             args.__setattr__(k, v)
+    #         return args
 
-        # TODO half to amp_test
-        tensor_type = torch.cuda.HalfTensor if half else torch.cuda.FloatTensor
-        model = model.eval()
-        if half:
-            model = model.half()
-        ids = []
-        data_list = []
-        results = []
-        video_names = defaultdict()
-        progress_bar = tqdm if is_main_process() and not self.online_callback else iter
+    #     # TODO half to amp_test
+    #     tensor_type = torch.cuda.HalfTensor if half else torch.cuda.FloatTensor
+    #     model = model.eval()
+    #     if half:
+    #         model = model.half()
+    #     ids = []
+    #     data_list = []
+    #     results = []
+    #     video_names = defaultdict()
+    #     progress_bar = tqdm if is_main_process() and not self.online_callback else iter
 
-        inference_time = 0
-        track_time = 0
-        n_samples = len(self.dataloader) - 1
+    #     inference_time = 0
+    #     track_time = 0
+    #     n_samples = len(self.dataloader) - 1
 
-        use_autograph = False
+    #     use_autograph = False
 
-        if trt_file is not None:
-            from torch2trt import TRTModule
+    #     if trt_file is not None:
+    #         from torch2trt import TRTModule
 
-            model_trt = TRTModule()
-            model_trt.load_state_dict(torch.load(trt_file))
+    #         model_trt = TRTModule()
+    #         model_trt.load_state_dict(torch.load(trt_file))
 
-            x = torch.ones(1, 3, test_size[0], test_size[1]).cuda()
-            model(x)
-            model = model_trt
+    #         x = torch.ones(1, 3, test_size[0], test_size[1]).cuda()
+    #         model(x)
+    #         model = model_trt
 
-        tracker = MIXTracker(self.args)
-        # ori_thresh = self.args.track_thresh
-        for cur_iter, (
-            origin_imgs,
-            imgs,
-            inscribed_images,
-            info_imgs,
-            ids,
-        ) in enumerate(progress_bar(self.dataloader)):
-            # info_imgs is 4 scalar tensors: height, width, frame_id, video_id
-            with torch.no_grad():
-                # init tracker
-                frame_id = info_imgs[2][0]
-                video_id = info_imgs[3][0].item()
-                img_file_name = info_imgs[4]
-                video_name = img_file_name[0].split("/")[-1]
-                batch_size = imgs.shape[0]
+    #     tracker = MIXTracker(self.args)
+    #     # ori_thresh = self.args.track_thresh
+    #     for cur_iter, (
+    #         origin_imgs,
+    #         imgs,
+    #         inscribed_images,
+    #         info_imgs,
+    #         ids,
+    #     ) in enumerate(progress_bar(self.dataloader)):
+    #         # info_imgs is 4 scalar tensors: height, width, frame_id, video_id
+    #         with torch.no_grad():
+    #             # init tracker
+    #             frame_id = info_imgs[2][0]
+    #             video_id = info_imgs[3][0].item()
+    #             img_file_name = info_imgs[4]
+    #             video_name = img_file_name[0].split("/")[-1]
+    #             batch_size = imgs.shape[0]
 
-                if video_name not in video_names:
-                    video_names[video_id] = video_name
-                if frame_id == 1:
-                    self.args = set_args(self.args, video_name)
-                    if "MOT17" in video_name:
-                        self.args.alpha = 0.8778
-                        self.args.iou_thresh = 0.2217
-                        self.args.match_thresh = 0.7986
-                    tracker.re_init(self.args)
-                    if len(results) != 0:
-                        result_filename = os.path.join(
-                            result_folder, "{}.txt".format(video_names[video_id - 1])
-                        )
-                        write_results(result_filename, results)
-                        results = []
+    #             if video_name not in video_names:
+    #                 video_names[video_id] = video_name
+    #             if frame_id == 1:
+    #                 self.args = set_args(self.args, video_name)
+    #                 if "MOT17" in video_name:
+    #                     self.args.alpha = 0.8778
+    #                     self.args.iou_thresh = 0.2217
+    #                     self.args.match_thresh = 0.7986
+    #                 tracker.re_init(self.args)
+    #                 if len(results) != 0:
+    #                     result_filename = os.path.join(
+    #                         result_folder, "{}.txt".format(video_names[video_id - 1])
+    #                     )
+    #                     write_results(result_filename, results)
+    #                     results = []
 
-                imgs = imgs.type(tensor_type)
+    #             imgs = imgs.type(tensor_type)
 
-                # skip the the last iters since batchsize might be not enough for batch inference
-                is_time_record = cur_iter < len(self.dataloader) - 1
-                if is_time_record:
-                    start = time.time()
+    #             # skip the the last iters since batchsize might be not enough for batch inference
+    #             is_time_record = cur_iter < len(self.dataloader) - 1
+    #             if is_time_record:
+    #                 start = time.time()
 
-                if self.timer is None:
-                    self.timer = Timer()
-                self.timer.tic()
+    #             if self.timer is None:
+    #                 self.timer = Timer()
+    #             self.timer.tic()
 
-                self.preproc_timer.tic()
-                self.preproc_timer_counter += 1
+    #             self.preproc_timer.tic()
+    #             self.preproc_timer_counter += 1
 
-                with torch.no_grad():
-                    outputs = model(imgs)
-                    # print(outputs)
+    #             with torch.no_grad():
+    #                 outputs = model(imgs)
+    #                 # print(outputs)
 
-                self.timer.toc()
-                self.timer_counter += 1
-                if self.timer_counter % (50 // batch_size) == 0:
-                    logger.info(
-                        "Model forward pass {} ({:.2f} fps)".format(
-                            frame_id,
-                            (1.0 / max(1e-5, self.timer.average_time) * batch_size),
-                        )
-                    )
-                    self.timer = Timer()
+    #             self.timer.toc()
+    #             self.timer_counter += 1
+    #             if self.timer_counter % (50 // batch_size) == 0:
+    #                 logger.info(
+    #                     "Model forward pass {} ({:.2f} fps)".format(
+    #                         frame_id,
+    #                         (1.0 / max(1e-5, self.timer.average_time) * batch_size),
+    #                     )
+    #                 )
+    #                 self.timer = Timer()
 
-                if decoder is not None:
-                    outputs = decoder(outputs, dtype=outputs.type())
+    #             if decoder is not None:
+    #                 outputs = decoder(outputs, dtype=outputs.type())
 
-                outputs = postprocess(
-                    outputs, self.num_classes, self.confthre, self.nmsthre
-                )
-                if outputs and outputs[0] is not None:
-                    # print(f" >>> {outputs[0].shape[0]} detections")
-                    assert outputs[0].shape[1] == 7  # Yolox output has 7 fields?
+    #             outputs = postprocess(
+    #                 outputs, self.num_classes, self.confthre, self.nmsthre
+    #             )
+    #             if outputs and outputs[0] is not None:
+    #                 # print(f" >>> {outputs[0].shape[0]} detections")
+    #                 assert outputs[0].shape[1] == 7  # Yolox output has 7 fields?
 
-                if is_time_record:
-                    infer_end = time_synchronized()
-                    inference_time += infer_end - start
+    #             if is_time_record:
+    #                 infer_end = time_synchronized()
+    #                 inference_time += infer_end - start
 
-            output_results = self.convert_to_coco_format(outputs, info_imgs, ids)
-            data_list.extend(output_results)
+    #         output_results = self.convert_to_coco_format(outputs, info_imgs, ids)
+    #         data_list.extend(output_results)
 
-            # if outputs[0] is not None:
-            #     outputs = postprocess(
-            #         torch.stack(outputs), self.num_classes, self.confthre, self.nmsthre
-            #     )
-            frame_count = len(outputs)
-            for frame_index in range(len(outputs)):
-                frame_id = info_imgs[2][frame_index]
-                # print(f"frame_id={frame_id}")
-                # run tracking
-                if outputs[frame_index] is not None:
-                    self.track_timer.tic()
-                    this_img_info = [
-                        info_imgs[0][frame_index],
-                        info_imgs[1][frame_index],
-                        info_imgs[2][frame_index],
-                        info_imgs[3],
-                    ]
-                    online_targets, detections = tracker.update(
-                        outputs[frame_index],
-                        this_img_info,
-                        self.img_size,
-                        imgs[frame_index].cuda(),
-                        # origin_imgs[frame_index].cuda(),
-                    )
-                    # continue
+    #         # if outputs[0] is not None:
+    #         #     outputs = postprocess(
+    #         #         torch.stack(outputs), self.num_classes, self.confthre, self.nmsthre
+    #         #     )
+    #         frame_count = len(outputs)
+    #         for frame_index in range(len(outputs)):
+    #             frame_id = info_imgs[2][frame_index]
+    #             # print(f"frame_id={frame_id}")
+    #             # run tracking
+    #             if outputs[frame_index] is not None:
+    #                 self.track_timer.tic()
+    #                 this_img_info = [
+    #                     info_imgs[0][frame_index],
+    #                     info_imgs[1][frame_index],
+    #                     info_imgs[2][frame_index],
+    #                     info_imgs[3],
+    #                 ]
+    #                 online_targets, detections = tracker.update(
+    #                     outputs[frame_index],
+    #                     this_img_info,
+    #                     self.img_size,
+    #                     imgs[frame_index].cuda(),
+    #                     # origin_imgs[frame_index].cuda(),
+    #                 )
+    #                 # continue
 
-                    online_tlwhs = []
-                    online_ids = []
-                    online_scores = []
-                    # if online_targets:
-                    #     print(f"{len(online_targets)} targets, {len(detections)} detections")
-                    for t in online_targets:
-                        tlwh = t.tlwh
-                        tid = t.track_id
-                        vertical = tlwh[2] / tlwh[3] > 1.6
-                        if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
-                            online_tlwhs.append(tlwh)
-                            online_ids.append(tid)
-                            online_scores.append(t.score)
-                        else:
-                            print("Skipping target")
-                    self.track_timer.toc()
-                    self.track_timer_counter += 1
-                    if self.track_timer_counter % 50 == 0:
-                        logger.info(
-                            "Tracking {} ({:.2f} fps)".format(
-                                frame_id, 1.0 / max(1e-5, self.track_timer.average_time)
-                            )
-                        )
-                        self.track_timer = Timer()
-                    self.preproc_timer.toc()
-                    if self.online_callback is not None:
-                        detections, online_tlwhs = self.online_callback(
-                            frame_id=frame_id,
-                            online_tlwhs=online_tlwhs,
-                            online_ids=online_ids,
-                            online_scores=online_scores,
-                            detections=detections,
-                            info_imgs=info_imgs,
-                            img=imgs[frame_index].unsqueeze(0),
-                            inscribed_image=inscribed_images[frame_index].unsqueeze(0),
-                            original_img=origin_imgs[frame_index].unsqueeze(0),
-                        )
-                    if frame_index < frame_count - 1:
-                        self.preproc_timer.tic()
-                    # save results
-                    if isinstance(online_tlwhs, torch.Tensor):
-                        online_tlwhs = online_tlwhs.numpy()
-                    if isinstance(online_ids, torch.Tensor):
-                        online_ids = online_ids.numpy()
-                    results.append(
-                        (frame_id.item(), online_tlwhs, online_ids, online_scores)
-                    )
+    #                 online_tlwhs = []
+    #                 online_ids = []
+    #                 online_scores = []
+    #                 # if online_targets:
+    #                 #     print(f"{len(online_targets)} targets, {len(detections)} detections")
+    #                 for t in online_targets:
+    #                     tlwh = t.tlwh
+    #                     tid = t.track_id
+    #                     vertical = tlwh[2] / tlwh[3] > 1.6
+    #                     if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
+    #                         online_tlwhs.append(tlwh)
+    #                         online_ids.append(tid)
+    #                         online_scores.append(t.score)
+    #                     else:
+    #                         print("Skipping target")
+    #                 self.track_timer.toc()
+    #                 self.track_timer_counter += 1
+    #                 if self.track_timer_counter % 50 == 0:
+    #                     logger.info(
+    #                         "Tracking {} ({:.2f} fps)".format(
+    #                             frame_id, 1.0 / max(1e-5, self.track_timer.average_time)
+    #                         )
+    #                     )
+    #                     self.track_timer = Timer()
+    #                 self.preproc_timer.toc()
+    #                 if self.online_callback is not None:
+    #                     detections, online_tlwhs = self.online_callback(
+    #                         frame_id=frame_id,
+    #                         online_tlwhs=online_tlwhs,
+    #                         online_ids=online_ids,
+    #                         online_scores=online_scores,
+    #                         detections=detections,
+    #                         info_imgs=info_imgs,
+    #                         img=imgs[frame_index].unsqueeze(0),
+    #                         inscribed_image=inscribed_images[frame_index].unsqueeze(0),
+    #                         original_img=origin_imgs[frame_index].unsqueeze(0),
+    #                     )
+    #                 if frame_index < frame_count - 1:
+    #                     self.preproc_timer.tic()
+    #                 # save results
+    #                 if isinstance(online_tlwhs, torch.Tensor):
+    #                     online_tlwhs = online_tlwhs.numpy()
+    #                 if isinstance(online_ids, torch.Tensor):
+    #                     online_ids = online_ids.numpy()
+    #                 results.append(
+    #                     (frame_id.item(), online_tlwhs, online_ids, online_scores)
+    #                 )
 
-                if is_time_record:
-                    track_end = time_synchronized()
-                    track_time += track_end - infer_end
+    #             if is_time_record:
+    #                 track_end = time_synchronized()
+    #                 track_time += track_end - infer_end
 
-                if cur_iter == len(self.dataloader) - 1:
-                    result_filename = os.path.join(
-                        result_folder, "{}.txt".format(video_names[video_id])
-                    )
-                    write_results(result_filename, results)
-                # end frame loop
-            # After frame loop
-            if self.preproc_timer_counter % 20 == 0:
-                logger.info(
-                    ">>> Preproc {} ({:.2f} fps)".format(
-                        frame_id,
-                        frame_count * 1.0 / max(1e-5, self.preproc_timer.average_time),
-                    )
-                )
-                self.preproc_timer = Timer()
+    #             if cur_iter == len(self.dataloader) - 1:
+    #                 result_filename = os.path.join(
+    #                     result_folder, "{}.txt".format(video_names[video_id])
+    #                 )
+    #                 write_results(result_filename, results)
+    #             # end frame loop
+    #         # After frame loop
+    #         if self.preproc_timer_counter % 20 == 0:
+    #             logger.info(
+    #                 ">>> Preproc {} ({:.2f} fps)".format(
+    #                     frame_id,
+    #                     frame_count * 1.0 / max(1e-5, self.preproc_timer.average_time),
+    #                 )
+    #             )
+    #             self.preproc_timer = Timer()
 
-        # always write results
-        result_filename = os.path.join(
-            result_folder, "{}.txt".format(video_names[video_id])
-        )
-        write_results(result_filename, results)
+    #     # always write results
+    #     result_filename = os.path.join(
+    #         result_folder, "{}.txt".format(video_names[video_id])
+    #     )
+    #     write_results(result_filename, results)
 
-        statistics = torch.cuda.FloatTensor([inference_time, track_time, n_samples])
-        if distributed:
-            data_list = gather(data_list, dst=0)
-            data_list = list(itertools.chain(*data_list))
-            torch.distributed.reduce(statistics, dst=0)
+    #     statistics = torch.cuda.FloatTensor([inference_time, track_time, n_samples])
+    #     if distributed:
+    #         data_list = gather(data_list, dst=0)
+    #         data_list = list(itertools.chain(*data_list))
+    #         torch.distributed.reduce(statistics, dst=0)
 
-        eval_results = self.evaluate_prediction(data_list, statistics)
-        synchronize()
-        return eval_results
+    #     eval_results = self.evaluate_prediction(data_list, statistics)
+    #     synchronize()
+    #     return eval_results
 
     def evaluate_hockeymom(
         self,
