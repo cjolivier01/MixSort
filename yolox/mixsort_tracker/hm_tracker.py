@@ -121,6 +121,14 @@ class STrack(BaseTrack):
         if template is not None:
             self.template = template
 
+    def remove(self):
+        self.is_activated = False
+        self.template = None
+        self.mean = None
+        self.covariance = None
+        self.score = None
+        self._tlwh = None
+
     @property
     # @jit(nopython=True)
     def tlwh(self):
@@ -181,6 +189,9 @@ class HMTracker(object):
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
         self.removed_stracks = []  # type: list[STrack]
+        self.removed_strack_ids = set()
+
+        self.update_counter = 0
 
         self.frame_id = 0
         self.args = args
@@ -194,6 +205,8 @@ class HMTracker(object):
         self.alpha = args.alpha
         self.radius = args.radius
         self.iou_thresh = args.iou_thresh
+
+        self.logger = None
 
         # mixformer setting & cfg
         # adapted from lib/train/run_training.py & train_script_mixformer.py
@@ -217,6 +230,11 @@ class HMTracker(object):
         network = build_mixformer_deit(self.cfg)
         self.network = network.cuda(torch.device(f"cuda:{args.local_rank}"))
         self.network.eval()
+
+    def log_state(self):
+        print(
+            f"tracked={len(self.tracked_stracks)}, lost={len(self.lost_stracks)}, removed={len(self.removed_stracks)}"
+        )
 
     def re_init(self, args, frame_rate=30):
         BaseTrack._count = 0  # set to 0 for new video
@@ -249,7 +267,7 @@ class HMTracker(object):
         logger.add_image_with_boxes(
             name,
             img,
-            np.array([s.tlbr for s in dets]),
+            np.array([s.tlbr.numpy() for s in dets]),
             labels=[str(i) for i in range(len(dets))],
         )
 
@@ -333,11 +351,8 @@ class HMTracker(object):
         search_bbox = torch.stack([det.tlwh.to(torch.int32) for det in dets])
         search_imgs = []
         search_boxes = []
+
         # vit dist
-        # self.logger=SummaryWriter('./debug_tensorboard')
-        # self.visualize(self.logger,template_imgs[0],search_img,search_box.clone())
-        # self.visualize_box(self.logger,img,stracks,"stracks")
-        # self.visualize_box(self.logger,img,dets,"dets")
         vit = np.zeros((len(stracks), len(dets)), dtype=np.float64)
 
         def _untuple(t):
@@ -352,6 +367,7 @@ class HMTracker(object):
             return t
 
         template_imgs = [_untuple(s.template) for s in stracks]
+
         for strack in stracks:
             # centered at predicted position
             center = strack.tlwh
@@ -372,6 +388,13 @@ class HMTracker(object):
             self.cfg.DATA.STD,
         )
         heatmap = self.network(template_imgs, search_imgs).cpu().detach().numpy()
+
+        # if self.logger is None:
+        #     self.logger = SummaryWriter("./debug_tensorboard")
+        #     self.visualize(self.logger, template_imgs[0], search_imgs[0], search_boxes[0])
+        #     self.visualize_box(self.logger, img, stracks, "stracks")
+        #     self.visualize_box(self.logger, img, dets, "dets")
+
         # linear transform to [0,1]
         for i in range(heatmap.shape[0]):
             heatmap[i][0] = heatmap[i][0] - heatmap[i][0].min()
@@ -411,6 +434,7 @@ class HMTracker(object):
     def update(self, output_results, img, class_ids, device=None):
         if device is None:
             device = img.device
+        self.update_counter += 1
         self.frame_id += 1
         activated_starcks = []
         refind_stracks = []
@@ -592,14 +616,25 @@ class HMTracker(object):
         self.tracked_stracks = joint_stracks(self.tracked_stracks, refind_stracks)
         self.lost_stracks = sub_stracks(self.lost_stracks, self.tracked_stracks)
         self.lost_stracks.extend(lost_stracks)
-        self.lost_stracks = sub_stracks(self.lost_stracks, self.removed_stracks)
+        #self.lost_stracks = sub_stracks(self.lost_stracks, self.removed_stracks)
+        #self.lost_stracks = sub_stracks_by_idset(self.lost_stracks, self.removed_strack_ids)
+        for r in removed_stracks:
+            self.removed_strack_ids.add(r.track_id)
+            r.remove()
         self.removed_stracks.extend(removed_stracks)
+
+        self.lost_stracks = sub_stracks_by_idset(self.lost_stracks, self.removed_strack_ids)
+
         self.tracked_stracks, self.lost_stracks = remove_duplicate_stracks(
             self.tracked_stracks, self.lost_stracks
         )
         # get scores of lost tracks
         output_stracks = [track for track in self.tracked_stracks if track.is_activated]
         self.last_img = img
+
+        if self.update_counter % 50 == 0:
+            self.log_state()
+
         return output_stracks, detections
 
 
@@ -627,6 +662,12 @@ def sub_stracks(tlista, tlistb):
             del stracks[tid]
     return list(stracks.values())
 
+def sub_stracks_by_idset(tlista, tid_set_remove):
+    result_tracks = []
+    for t in tlista:
+        if t.track_id not in tid_set_remove:
+            result_tracks.append(t)
+    return result_tracks
 
 def remove_duplicate_stracks(stracksa, stracksb):
     pdist = matching.iou_distance(stracksa, stracksb)
