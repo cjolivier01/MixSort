@@ -87,22 +87,48 @@ if __name__ == "__main__":
     if args.replace_track_ids:
         replace_list = args.replace_track_ids.split(",")
         for replace in replace_list:
-          tokens = replace.split('=')
-          old = tokens[0]
-          new = tokens[1]
-          replace_track_ids[int(old)] = int(new)
+            tokens = replace.split("=")
+            old = tokens[0]
+            new = tokens[1]
+            replace_track_ids[int(old)] = int(new)
 
     for split in SPLITS:
-        if split == "test":
-            data_path = os.path.join(DATA_PATH, "test")
+        if args.single_sequence:
+            out_dir = os.path.join(
+                OUT_PATH,
+                "..",
+                split,
+                args.single_sequence,
+                "annotations",
+            )
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
+            out_path = os.path.join(out_dir, "instances_default.json")
+            data_path = os.path.join(DATA_PATH, split)
         else:
-            data_path = os.path.join(DATA_PATH, "train")
-        out_path = os.path.join(OUT_PATH, "{}.json".format(split))
+            if split == "test":
+                data_path = os.path.join(DATA_PATH, "test")
+            else:
+                data_path = os.path.join(DATA_PATH, "train")
+            out_path = os.path.join(OUT_PATH, "{}.json".format(split))
         out = {
             "images": [],
             "annotations": [],
             "videos": [],
-            "categories": [{"id": 1, "name": "pedestrian"}],
+            "categories": [
+                {
+                    "id": 1,
+                    "name": "pedestrian",
+                },
+                {
+                    "id": 2,
+                    "name": "player",
+                },
+                {
+                    "id": 3,
+                    "name": "referee",
+                },
+            ],
         }
         seqs = sorted(os.listdir(data_path))
         image_cnt = 0
