@@ -110,6 +110,12 @@ if __name__ == "__main__":
         video_cnt = 0
         tid_curr = 0
         tid_last = -1
+        if args.single_sequence:
+            if args.single_sequence not in seqs:
+                print(f"Sequence {args.single_sequence} not found in split {split}")
+                continue
+            else:
+                seqs = [args.single_sequence]
         for seq in sorted(seqs):
             if ".DS_Store" in seq:
                 continue
