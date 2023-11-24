@@ -188,8 +188,9 @@ class HMTracker(object):
     def __init__(self, args, frame_rate=30):
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
-        self.removed_stracks = []  # type: list[STrack]
+        #self.removed_stracks = []  # type: list[STrack]
         #self.removed_strack_ids = set()
+        self.removed_strack_count = 0
 
         self.update_counter = 0
 
@@ -233,14 +234,14 @@ class HMTracker(object):
 
     def log_state(self):
         print(
-            f"tracked={len(self.tracked_stracks)}, lost={len(self.lost_stracks)}, removed={len(self.removed_stracks)}"
+            f"tracked={len(self.tracked_stracks)}, lost={len(self.lost_stracks)}, removed={self.removed_strack_count}"
         )
 
     def re_init(self, args, frame_rate=30):
         BaseTrack._count = 0  # set to 0 for new video
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
-        self.removed_stracks = []  # type: list[STrack]
+        #self.removed_stracks = []  # type: list[STrack]
 
         self.frame_id = 0
         self.args = args
@@ -618,10 +619,12 @@ class HMTracker(object):
         self.lost_stracks.extend(lost_stracks)
         #self.lost_stracks = sub_stracks(self.lost_stracks, self.removed_stracks)
         #self.lost_stracks = sub_stracks_by_idset(self.lost_stracks, self.removed_strack_ids)
-        for r in removed_stracks:
-            #self.removed_strack_ids.add(r.track_id)
-            r.remove()
-        self.removed_stracks.extend(removed_stracks)
+        if removed_stracks:
+            for r in removed_stracks:
+                #self.removed_strack_ids.add(r.track_id)
+                r.remove()
+            self.removed_strack_count += len(removed_stracks)
+        #self.removed_stracks.extend(removed_stracks)
 
         #self.lost_stracks = sub_stracks_by_idset(self.lost_stracks, self.removed_strack_ids)
         self.lost_stracks = sub_stracks(self.lost_stracks, removed_stracks)
