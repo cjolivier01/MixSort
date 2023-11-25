@@ -20,14 +20,13 @@ class Exp(MyExp):
 
         size = (512, 928)  # 16:9-ish
         #size = (416, 768) # 16:9-ish
-        #size = (320, 896)
 
         self.input_size = size
         self.test_size = size
 
         self.random_size = (18, 32)
         self.max_epoch = 80
-        # self.print_interval = 20
+        self.print_interval = 20
         # self.eval_interval = 1
         self.eval_interval = 100
         self.test_conf = 0.1
