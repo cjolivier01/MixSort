@@ -77,6 +77,7 @@ def process(split="train", video_frame_step: int = 1):
     max_img += int(img_id_count * 2)
     max_ann += int(anno_count * 2)
     max_video += 1
+    bs_track_id = 99999
 
     if split == "train":
         seq = "tvbb-untracked"
@@ -109,6 +110,9 @@ def process(split="train", video_frame_step: int = 1):
             all_annotation_ids.add(annotation_id)
             ann["id"] = annotation_id
             ann["image_id"] = ann["image_id"] + max_img
+            if "track_id" not in ann:
+                ann["track_id"] = bs_track_id
+                bs_track_id += 1
             #assert ann["category_id"] == _PLAYER_CLASS_ID
             #ann["category_id"] = _PLAYER_CLASS_ID
             ann_list.append(ann)
