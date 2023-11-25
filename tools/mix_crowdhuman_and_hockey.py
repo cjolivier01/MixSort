@@ -3,7 +3,7 @@ import os
 
 _PERSON_CLASS_ID = 1
 _PLAYER_CLASS_ID = 2
-# _REFEREE_CLASS_ID = 3
+_REFEREE_CLASS_ID = 3
 
 
 def process(split="train", video_frame_step: int = 1):
@@ -12,7 +12,7 @@ def process(split="train", video_frame_step: int = 1):
     category_list = [
         {"id": _PERSON_CLASS_ID, "name": "person"},
         {"id": _PLAYER_CLASS_ID, "name": "player"},
-        # {"id": _REFEREE_CLASS_ID, "name": "referee"},
+        {"id": _REFEREE_CLASS_ID, "name": "referee"},
     ]
 
     all_image_ids = set()
@@ -72,14 +72,61 @@ def process(split="train", video_frame_step: int = 1):
     print(f"crowdhuman-{split}: {len(video_list)} videos, {len(img_list)} images, {len(ann_list)} annotations")
 
     #
+    # Norcal image dataset (not video)
+    #
+    max_img += int(img_id_count * 2)
+    max_ann += int(anno_count * 2)
+    max_video += 1
+
+    if split == "train":
+        seq = "tvbb-untracked"
+        split_json = json.load(
+            open(f"{base_dir}/norcal/{split}/{seq}/annotations/instances_default.json", "r")
+        )
+
+        img_id_count = 0
+        for img in split_json["images"]:
+            img_id_count += 1
+            img["file_name"] = (
+                f"{base_dir}/norcal/{split}/{seq}/images/" + img["file_name"]
+            )
+            img["frame_id"] = img_id_count
+            # No prev for non-sequence-video
+            img["prev_image_id"] = img["id"] + max_img
+            img["next_image_id"] = img["id"] + max_img
+            image_id = img["id"] + max_img
+            assert image_id not in all_image_ids
+            all_image_ids.add(image_id)
+            img["id"] = image_id
+            img["video_id"] = max_video
+            img_list.append(img)
+
+        anno_count = 0
+        for ann in split_json["annotations"]:
+            anno_count += 1
+            annotation_id = ann["id"] + max_ann
+            assert annotation_id not in all_annotation_ids
+            all_annotation_ids.add(annotation_id)
+            ann["id"] = annotation_id
+            ann["image_id"] = ann["image_id"] + max_img
+            #assert ann["category_id"] == _PLAYER_CLASS_ID
+            #ann["category_id"] = _PLAYER_CLASS_ID
+            ann_list.append(ann)
+
+        video_list.append({"id": max_video, "file_name": f"norcal_{seq}_{split}"})
+        video_id_mapping[max_video] = max_video
+
+        #print(f"norcal-{split}: {len(video_list)} videos, {len(img_list)} images, {len(ann_list)} annotations")
+
+    #
     # HDS (video dataset)
     #
     split_json = json.load(
         open(f"{base_dir}/hockeyTrackingDataset/annotations/{split}.json", "r")
     )
 
-    max_img += int(img_id_count * 2)
-    max_ann += int(anno_count * 2)
+    max_img += int(img_id_count * 3)
+    max_ann += int(anno_count * 3)
     max_video += 1
 
     img_id_count = 0
@@ -143,5 +190,5 @@ def process(split="train", video_frame_step: int = 1):
 
 
 if __name__ == "__main__":
-    process(split="test", video_frame_step=4)
     process(split="train", video_frame_step=4)
+    process(split="test", video_frame_step=4)
