@@ -3,8 +3,8 @@
 #PARTITION_NAME=sw-a100
 #PARTITION_NAME=sw-dpu
 PARTITION_NAME=sw-mpu
-GPUS_PER_HOST=4
-#GPUS_PER_HOST=8
+#GPUS_PER_HOST=4
+GPUS_PER_HOST=8
 BATCH_SIZE_PER_GPU=2
 #GRES="--gres dpu:1"
 #GRES="--gres gpu:8"
@@ -52,6 +52,8 @@ EXP="exps/example/mot/yolox_x_ch_ht.py"
 #PRETRAINED_CHECKPOINT="pretrained/my_ch.pth.tar"
 #PRETRAINED_CHECKPOINT="YOLOX_outputs/yolox_x_ch/latest_ckpt.pth.tar"
 
+#      -o
+
 PYTHONPATH="$(pwd)/../../src:$PYTHONPATH" \
 srun --tasks-per-node 1 \
     ${NODE_COUNT} \
@@ -64,7 +66,6 @@ srun --tasks-per-node 1 \
       -f "${EXP}" \
       -d ${GPUS_PER_HOST} \
       -b ${TOTAL_BATCH_SIZE} \
-      -o \
       ${START_EPOCH} \
       ${RESUME} \
       --fp16
