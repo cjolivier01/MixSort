@@ -114,7 +114,7 @@ def process(split="train", video_frame_step: int = 1):
                 ann["track_id"] = bs_track_id
                 bs_track_id += 1
             #assert ann["category_id"] == _PLAYER_CLASS_ID
-            #ann["category_id"] = _PLAYER_CLASS_ID
+            ann["category_id"] = _PLAYER_CLASS_ID
             ann_list.append(ann)
 
         video_list.append({"id": max_video, "file_name": f"norcal_{seq}_{split}"})
