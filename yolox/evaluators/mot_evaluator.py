@@ -921,12 +921,12 @@ class MOTEvaluator:
                 self.preproc_timer.tic()
                 self.preproc_timer_counter += 1
 
-                assert origin_imgs.shape[0] == 1  # TODO: support batch
+                #assert origin_imgs.shape[0] == 1  # TODO: support batch
                 # origin_imgs = origin_imgs.squeeze(0).permute(1, 2, 0).contiguous()
-                online_targets = tracker.update(
+                dets, id_feature = tracker.detect(
                     letterbox_imgs,
-                    origin_imgs.squeeze(0).permute(1, 2, 0),
-                    dataloader=self.dataloader,
+                    origin_imgs.permute(0, 2, 3, 1),
+                    #origin_imgs.squeeze(0).permute(1, 2, 0),
                 )
 
                 # outputs[1] = None
@@ -937,11 +937,15 @@ class MOTEvaluator:
 
                 for frame_index in range(len(letterbox_imgs)):
                     frame_id = info_imgs[2][frame_index]
+                    detections = dets[frame_index]
+
+                    online_targets = tracker.inner_update(
+                        detections, id_feature[frame_index]
+                    )
 
                     online_tlwhs = []
                     online_ids = []
                     online_scores = []
-                    detections = []
 
                     for t in online_targets:
                         tlwh = t.tlwh
