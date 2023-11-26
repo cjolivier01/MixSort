@@ -22,7 +22,8 @@ class Exp(MyExp):
         #size = (800, 1440)
 
         # For CVAT output
-        size = (1024, 4096)
+        size = (2048, 3616)
+        #size = (1024, 4096)
 
         self.input_size = size
         self.test_size = size
