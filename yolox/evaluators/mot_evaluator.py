@@ -921,76 +921,67 @@ class MOTEvaluator:
                 self.preproc_timer.tic()
                 self.preproc_timer_counter += 1
 
-            assert origin_imgs.shape[0] == 1  # TODO: support batch
-            # origin_imgs = origin_imgs.squeeze(0).permute(1, 2, 0).contiguous()
-            online_targets = tracker.update(
-                letterbox_imgs,
-                origin_imgs.squeeze(0).permute(1, 2, 0),
-                dataloader=self.dataloader,
-            )
+                assert origin_imgs.shape[0] == 1  # TODO: support batch
+                # origin_imgs = origin_imgs.squeeze(0).permute(1, 2, 0).contiguous()
+                online_targets = tracker.update(
+                    letterbox_imgs,
+                    origin_imgs.squeeze(0).permute(1, 2, 0),
+                    dataloader=self.dataloader,
+                )
 
-            # outputs[1] = None
-            # output_results = self.convert_to_coco_format_post_scale(outputs, ids)
-            # outputs, output_results = self.filter_outputs(outputs, output_results)
+                # outputs[1] = None
+                # output_results = self.convert_to_coco_format_post_scale(outputs, ids)
+                # outputs, output_results = self.filter_outputs(outputs, output_results)
 
-            # data_list.extend(output_results)
+                # data_list.extend(output_results)
 
-            for frame_index in range(len(letterbox_imgs)):
-                frame_id = info_imgs[2][frame_index]
+                for frame_index in range(len(letterbox_imgs)):
+                    frame_id = info_imgs[2][frame_index]
 
-                online_tlwhs = []
-                online_ids = []
-                online_scores = []
-                detections = []
+                    online_tlwhs = []
+                    online_ids = []
+                    online_scores = []
+                    detections = []
 
-                for t in online_targets:
-                    tlwh = t.tlwh
-                    tid = t.track_id
-                    vertical = tlwh[2] / tlwh[3] > 1.6
-                    if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
-                        online_tlwhs.append(torch.from_numpy(tlwh))
-                        online_ids.append(tid)
-                        online_scores.append(t.score)
-                    else:
-                        print("Skipping target")
+                    for t in online_targets:
+                        tlwh = t.tlwh
+                        tid = t.track_id
+                        vertical = tlwh[2] / tlwh[3] > 1.6
+                        if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
+                            online_tlwhs.append(torch.from_numpy(tlwh))
+                            online_ids.append(tid)
+                            online_scores.append(t.score)
+                        else:
+                            print(f"Skipping target: tlwh={tlwh}")
 
-                if online_ids:
-                    online_ids = torch.tensor(online_ids, dtype=torch.int64)
-                    online_tlwhs = torch.stack(online_tlwhs)
+                    if online_ids:
+                        online_ids = torch.tensor(online_ids, dtype=torch.int64)
+                        online_tlwhs = torch.stack(online_tlwhs)
 
-                self.track_timer.toc()
-                self.track_timer_counter += 1
-                if self.track_timer_counter % 50 == 0:
-                    logger.info(
-                        "Tracking {} ({:.2f} fps)".format(
-                            frame_id, 1.0 / max(1e-5, self.track_timer.average_time)
+                    if self.online_callback is not None:
+                        detections, online_tlwhs = self.online_callback(
+                            frame_id=frame_id,
+                            online_tlwhs=online_tlwhs,
+                            online_ids=online_ids,
+                            online_scores=online_scores,
+                            detections=detections,
+                            info_imgs=info_imgs,
+                            letterbox_img=letterbox_imgs[frame_index].unsqueeze(0),
+                            inscribed_img=inscribed_images[frame_index].unsqueeze(0),
+                            original_img=origin_imgs[frame_index].unsqueeze(0),
                         )
-                    )
-                    self.track_timer = Timer()
 
-                if self.online_callback is not None:
-                    detections, online_tlwhs = self.online_callback(
-                        frame_id=frame_id,
-                        online_tlwhs=online_tlwhs,
-                        online_ids=online_ids,
-                        online_scores=online_scores,
-                        detections=detections,
-                        info_imgs=info_imgs,
-                        letterbox_img=letterbox_imgs[frame_index].unsqueeze(0),
-                        inscribed_img=inscribed_images[frame_index].unsqueeze(0),
-                        original_img=origin_imgs[frame_index].unsqueeze(0),
-                    )
-
-                    # save results
-                    if isinstance(online_tlwhs, torch.Tensor):
-                        online_tlwhs = online_tlwhs.numpy()
-                    if isinstance(online_ids, torch.Tensor):
-                        online_ids = online_ids.numpy()
-                    if online_scores and isinstance(online_scores, torch.Tensor):
-                        online_scores = torch.stack(online_scores).numpy()
-                    results.append(
-                        (frame_id.item(), online_tlwhs, online_ids, online_scores)
-                    )
+                        # save results
+                        if isinstance(online_tlwhs, torch.Tensor):
+                            online_tlwhs = online_tlwhs.numpy()
+                        if isinstance(online_ids, torch.Tensor):
+                            online_ids = online_ids.numpy()
+                        if online_scores and isinstance(online_scores, torch.Tensor):
+                            online_scores = torch.stack(online_scores).numpy()
+                        results.append(
+                            (frame_id.item(), online_tlwhs, online_ids, online_scores)
+                        )
+                # end frame loop
 
                 # if is_time_record:
                 #     track_end = time_synchronized()
@@ -1002,14 +993,13 @@ class MOTEvaluator:
                     )
                     write_results(result_filename, results)
 
-                # end frame loop
             #
             # After frame loop
             #
             self.preproc_timer.toc()
             if self.preproc_timer_counter % 20 == 0:
                 logger.info(
-                    ">>> Preproc {} ({:.2f} fps)".format(
+                    ">>> FairMOT Tracking {} ({:.2f} fps)".format(
                         frame_id,
                         batch_size * 1.0 / max(1e-5, self.preproc_timer.average_time),
                     )
