@@ -183,14 +183,16 @@ if __name__ == "__main__":
                 output_file_name = ""
                 if not args.single_sequence:
                     output_file_name = os.path.join(seq, "images")
+                    output_file_name = os.path.join(
+                        output_file_name,
+                        "{}{:06d}.png".format(
+                            args.output_image_prefix, i + args.image_start_number
+                        ),
+                    )
                 else:
-                    output_file_name = "images"
-                output_file_name = os.path.join(
-                    output_file_name,
-                    "{}{:06d}.png".format(
+                    output_file_name = "{}{:06d}.png".format(
                         args.output_image_prefix, i + args.image_start_number
-                    ),
-                )
+                    )
                 img = cv2.imread(os.path.join(data_path, input_file_name))
                 height, width = img.shape[:2]
                 image_info = {
