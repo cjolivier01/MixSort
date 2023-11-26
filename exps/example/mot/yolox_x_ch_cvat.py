@@ -20,6 +20,7 @@ class Exp(MyExp):
 
         # For CVAT output
         size = (2048, 3616)
+        #size = (1600, 2816)
         #size = (1024, 4096)
 
         self.input_size = size

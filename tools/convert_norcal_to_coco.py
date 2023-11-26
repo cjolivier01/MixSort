@@ -148,7 +148,7 @@ if __name__ == "__main__":
             video_cnt += 1  # video sequence number.
             out["videos"].append({"id": video_cnt, "file_name": seq})
             seq_path = os.path.join(data_path, seq)
-            img_path = os.path.join(seq_path, "img1")
+            img_path = os.path.join(seq_path, "images")
             ann_path = os.path.join(seq_path, "gt", "gt.txt")
             # if not os.path.exists(img_path):
             #     print(f"Path does not exist (skipping): {img_path}")
@@ -175,16 +175,16 @@ if __name__ == "__main__":
                     continue
                 input_file_name = os.path.join(
                     seq,
-                    "img1",
+                    "images",
                     "{}{:06d}.png".format(
                         args.input_image_prefix, i + args.image_start_number
                     ),
                 )
                 output_file_name = ""
                 if not args.single_sequence:
-                    output_file_name = os.path.join(seq, "img1")
+                    output_file_name = os.path.join(seq, "images")
                 else:
-                    output_file_name = "img1"
+                    output_file_name = "images"
                 output_file_name = os.path.join(
                     output_file_name,
                     "{}{:06d}.png".format(
