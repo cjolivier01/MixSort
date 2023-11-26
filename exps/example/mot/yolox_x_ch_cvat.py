@@ -18,9 +18,6 @@ class Exp(MyExp):
         self.train_ann = "mix.json"
         self.val_ann = "mix.json"
 
-        # Normal
-        #size = (800, 1440)
-
         # For CVAT output
         size = (2048, 3616)
         #size = (1024, 4096)
