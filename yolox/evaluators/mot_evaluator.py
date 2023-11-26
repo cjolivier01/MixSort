@@ -18,6 +18,8 @@ from yolox.sort_tracker.sort import Sort
 from yolox.deepsort_tracker.deepsort import DeepSort
 from yolox.motdt_tracker.motdt_tracker import OnlineTracker
 
+from hmlib.tracker.multitracker import JDETracker
+
 import contextlib
 import io
 import os
@@ -89,6 +91,7 @@ class MOTEvaluator:
         num_classes,
         online_callback: callable = None,
         postprocessor=None,
+        device: str = None,
     ):
         """
         Args:
@@ -99,6 +102,9 @@ class MOTEvaluator:
                 is defined in the config file.
             nmsthre (float): IoU threshold of non-max supression ranging from 0 to 1.
         """
+        self.device = device
+        if self.device is None:
+            self.device = f"cuda:{args.local_rank}"
         self.dataloader = dataloader
         self.img_size = img_size
         self.confthre = confthre
@@ -783,6 +789,212 @@ class MOTEvaluator:
                 if is_time_record:
                     track_end = time_synchronized()
                     track_time += track_end - infer_end
+
+                if cur_iter == len(self.dataloader) - 1:
+                    result_filename = os.path.join(
+                        result_folder, "{}.txt".format(video_names[video_id])
+                    )
+                    write_results(result_filename, results)
+
+                # end frame loop
+            #
+            # After frame loop
+            #
+            self.preproc_timer.toc()
+            if self.preproc_timer_counter % 20 == 0:
+                logger.info(
+                    ">>> Preproc {} ({:.2f} fps)".format(
+                        frame_id,
+                        batch_size * 1.0 / max(1e-5, self.preproc_timer.average_time),
+                    )
+                )
+                self.preproc_timer = Timer()
+
+        # always write results
+        result_filename = os.path.join(
+            result_folder, "{}.txt".format(video_names[video_id])
+        )
+        write_results(result_filename, results)
+
+        statistics = torch.cuda.FloatTensor([inference_time, track_time, n_samples])
+        if distributed:
+            data_list = gather(data_list, dst=0)
+            data_list = list(itertools.chain(*data_list))
+            torch.distributed.reduce(statistics, dst=0)
+
+        if not evaluate:
+            return data_list, statistics
+        eval_results = self.evaluate_prediction(data_list, statistics)
+        synchronize()
+        return eval_results
+
+    def evaluate_fair(
+        self,
+        model,
+        distributed=False,
+        half=False,
+        trt_file=None,
+        decoder=None,
+        test_size=None,
+        result_folder=None,
+        evaluate: bool = False,
+        tracker_name="jde",
+    ):
+        """
+        COCO average precision (AP) Evaluation. Iterate inference on the test dataset
+        and the results are evaluated by COCO API.
+
+        NOTE: This function will change training mode to False, please save states if needed.
+
+        Args:
+            model : model to evaluate.
+
+        Returns:
+            ap50_95 (float) : COCO AP of IoU=50:95
+            ap50 (float) : COCO AP of IoU=50
+            summary (sr): summary info of evaluation.
+        """
+
+        # if self.args.iou_only:
+        #     # Still use the old onee, I guess
+        #     from yolox.mixsort_tracker.mixsort_iou_tracker import (
+        #         MIXTracker as HMTracker,
+        #     )
+        # else:
+        #     from yolox.mixsort_tracker.hm_tracker import HMTracker
+
+        # TODO half to amp_test
+        tensor_type = torch.cuda.HalfTensor if half else torch.cuda.FloatTensor
+        assert model is None
+        # model = model.eval()
+        # if half:
+        #     model = model.half()
+        ids = []
+        data_list = []
+        results = []
+        video_names = defaultdict()
+        progress_bar = tqdm if is_main_process() and not self.online_callback else iter
+
+        inference_time = 0
+        track_time = 0
+        n_samples = len(self.dataloader) - 1
+
+        tracker = JDETracker(opt=self.args, frame_rate=self.dataloader.fps)
+
+        for cur_iter, (
+            origin_imgs,
+            letterbox_imgs,
+            inscribed_images,
+            info_imgs,
+            ids,
+        ) in enumerate(progress_bar(self.dataloader)):
+            # info_imgs is 4 scalar tensors: height, width, frame_id, video_id
+            with torch.no_grad():
+                # init tracker
+                frame_id = info_imgs[2][0]
+                video_id = info_imgs[3][0].item()
+                img_file_name = info_imgs[4]
+                video_name = img_file_name[0].split("/")[-1]
+                batch_size = letterbox_imgs.shape[0]
+
+                if video_name not in video_names:
+                    video_names[video_id] = video_name
+                if frame_id == 1:
+                    if len(results) != 0:
+                        result_filename = os.path.join(
+                            result_folder, "{}.txt".format(video_names[video_id - 1])
+                        )
+                        write_results(result_filename, results)
+                        results = []
+
+                letterbox_imgs = letterbox_imgs.type(tensor_type)
+
+                # skip the the last iters since batchsize might be not enough for batch inference
+                is_time_record = cur_iter < len(self.dataloader) - 1
+                if is_time_record:
+                    start = time.time()
+
+                if self.timer is None:
+                    self.timer = Timer()
+                self.timer.tic()
+
+                self.preproc_timer.tic()
+                self.preproc_timer_counter += 1
+
+            assert origin_imgs.shape[0] == 1  # TODO: support batch
+            # origin_imgs = origin_imgs.squeeze(0).permute(1, 2, 0).contiguous()
+            online_targets = tracker.update(
+                letterbox_imgs,
+                origin_imgs.squeeze(0).permute(1, 2, 0),
+                dataloader=self.dataloader,
+            )
+
+            # outputs[1] = None
+            # output_results = self.convert_to_coco_format_post_scale(outputs, ids)
+            # outputs, output_results = self.filter_outputs(outputs, output_results)
+
+            # data_list.extend(output_results)
+
+            for frame_index in range(len(letterbox_imgs)):
+                frame_id = info_imgs[2][frame_index]
+
+                online_tlwhs = []
+                online_ids = []
+                online_scores = []
+                detections = []
+
+                for t in online_targets:
+                    tlwh = t.tlwh
+                    tid = t.track_id
+                    vertical = tlwh[2] / tlwh[3] > 1.6
+                    if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
+                        online_tlwhs.append(torch.from_numpy(tlwh))
+                        online_ids.append(tid)
+                        online_scores.append(t.score)
+                    else:
+                        print("Skipping target")
+
+                if online_ids:
+                    online_ids = torch.tensor(online_ids, dtype=torch.int64)
+                    online_tlwhs = torch.stack(online_tlwhs)
+
+                self.track_timer.toc()
+                self.track_timer_counter += 1
+                if self.track_timer_counter % 50 == 0:
+                    logger.info(
+                        "Tracking {} ({:.2f} fps)".format(
+                            frame_id, 1.0 / max(1e-5, self.track_timer.average_time)
+                        )
+                    )
+                    self.track_timer = Timer()
+
+                if self.online_callback is not None:
+                    detections, online_tlwhs = self.online_callback(
+                        frame_id=frame_id,
+                        online_tlwhs=online_tlwhs,
+                        online_ids=online_ids,
+                        online_scores=online_scores,
+                        detections=detections,
+                        info_imgs=info_imgs,
+                        letterbox_img=letterbox_imgs[frame_index].unsqueeze(0),
+                        inscribed_img=inscribed_images[frame_index].unsqueeze(0),
+                        original_img=origin_imgs[frame_index].unsqueeze(0),
+                    )
+
+                    # save results
+                    if isinstance(online_tlwhs, torch.Tensor):
+                        online_tlwhs = online_tlwhs.numpy()
+                    if isinstance(online_ids, torch.Tensor):
+                        online_ids = online_ids.numpy()
+                    if online_scores and isinstance(online_scores, torch.Tensor):
+                        online_scores = torch.stack(online_scores).numpy()
+                    results.append(
+                        (frame_id.item(), online_tlwhs, online_ids, online_scores)
+                    )
+
+                # if is_time_record:
+                #     track_end = time_synchronized()
+                #     track_time += track_end - infer_end
 
                 if cur_iter == len(self.dataloader) - 1:
                     result_filename = os.path.join(
