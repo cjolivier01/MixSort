@@ -27,6 +27,7 @@ import itertools
 import json
 import tempfile
 import time
+from typing import List
 
 # import pt_autograph
 # import pt_autograph.flow.runner as runner
@@ -75,6 +76,26 @@ def write_results_no_score(filename, results):
     logger.info("save results to {}".format(filename))
 
 
+class TrackingHead:
+    def filter_outputs(self, outputs: torch.Tensor, output_results):
+        return outputs, output_results
+
+    def process_tracking(
+        self,
+        frame_id: int,
+        online_tlwhs: torch.Tensor,
+        online_ids: torch.Tensor,
+        detections = List[any],
+        info_imgs: torch.Tensor = None,
+        letterbox_img: torch.Tensor = None,
+        inscribed_img: torch.Tensor = None,
+        original_img: torch.Tensor = None,
+        online_scores = None,
+    ):
+        return detections, online_tlwhs
+
+
+
 class MOTEvaluator:
     """
     COCO AP Evaluation class.  All the data in the val2017 dataset are processed
@@ -89,8 +110,7 @@ class MOTEvaluator:
         confthre,
         nmsthre,
         num_classes,
-        online_callback: callable = None,
-        postprocessor=None,
+        postprocessor: TrackingHead = None,
         device: str = None,
     ):
         """
@@ -111,7 +131,6 @@ class MOTEvaluator:
         self.nmsthre = nmsthre
         self.num_classes = num_classes
         self.args = args
-        self.online_callback = online_callback
         self.timer = None
         self.timer_counter = 0
         self.track_timer = Timer()
@@ -258,8 +277,8 @@ class MOTEvaluator:
                         online_ids.append(tid)
                         online_scores.append(t.score)
 
-                if self.online_callback is not None:
-                    _, online_tlwhs = self.online_callback(
+                if self.postprocessor is not None:
+                    _, online_tlwhs = self.postprocessor.process_tracking(
                         frame_id=frame_id,
                         online_tlwhs=online_tlwhs,
                         online_ids=online_ids,
@@ -497,8 +516,8 @@ class MOTEvaluator:
     #                     )
     #                     self.track_timer = Timer()
     #                 self.preproc_timer.toc()
-    #                 if self.online_callback is not None:
-    #                     detections, online_tlwhs = self.online_callback(
+    #               if self.postprocessor is not None:
+    #                   _, online_tlwhs = self.postprocessor.process_tracking(
     #                         frame_id=frame_id,
     #                         online_tlwhs=online_tlwhs,
     #                         online_ids=online_ids,
@@ -616,7 +635,7 @@ class MOTEvaluator:
         data_list = []
         results = []
         video_names = defaultdict()
-        progress_bar = tqdm if is_main_process() and not self.online_callback else iter
+        progress_bar = tqdm if is_main_process() and not self.postprocessor else iter
 
         inference_time = 0
         track_time = 0
@@ -762,8 +781,8 @@ class MOTEvaluator:
                     )
                     self.track_timer = Timer()
 
-                if self.online_callback is not None:
-                    detections, online_tlwhs = self.online_callback(
+                if self.postprocessor is not None:
+                    detections, online_tlwhs = self.postprocessor.process_tracking(
                         frame_id=frame_id,
                         online_tlwhs=online_tlwhs,
                         online_ids=online_ids,
@@ -873,7 +892,7 @@ class MOTEvaluator:
         data_list = []
         results = []
         video_names = defaultdict()
-        progress_bar = tqdm if is_main_process() and not self.online_callback else iter
+        progress_bar = tqdm if is_main_process() and not self.postprocessor else iter
 
         inference_time = 0
         track_time = 0
@@ -962,8 +981,8 @@ class MOTEvaluator:
                         online_ids = torch.tensor(online_ids, dtype=torch.int64)
                         online_tlwhs = torch.stack(online_tlwhs)
 
-                    if self.online_callback is not None:
-                        detections, online_tlwhs = self.online_callback(
+                    if self.postprocessor is not None:
+                        detections, online_tlwhs = self.postprocessor.process_tracking(
                             frame_id=frame_id,
                             online_tlwhs=online_tlwhs,
                             online_ids=online_ids,
@@ -1158,8 +1177,8 @@ class MOTEvaluator:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
 
-                if self.online_callback is not None:
-                    _, online_tlwhs = self.online_callback(
+                if self.postprocessor is not None:
+                    _, online_tlwhs = self.postprocessor.process_tracking(
                         frame_id=frame_id,
                         online_tlwhs=online_tlwhs,
                         online_ids=online_ids,
@@ -1341,8 +1360,8 @@ class MOTEvaluator:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
 
-                if self.online_callback is not None:
-                    _, online_tlwhs = self.online_callback(
+                if self.postprocessor is not None:
+                    _, online_tlwhs = self.postprocessor.process_tracking(
                         frame_id=frame_id,
                         online_tlwhs=online_tlwhs,
                         online_ids=online_ids,
@@ -1484,8 +1503,8 @@ class MOTEvaluator:
                     online_tlwhs.append(tlwh)
                     online_ids.append(tid)
 
-            if self.online_callback is not None:
-                _, online_tlwhs = self.online_callback(
+            if self.postprocessor is not None:
+                _, online_tlwhs = self.postprocessor.process_tracking(
                     frame_id=frame_id,
                     online_tlwhs=online_tlwhs,
                     online_ids=online_ids,
@@ -1629,8 +1648,8 @@ class MOTEvaluator:
                     online_tlwhs.append(tlwh)
                     online_ids.append(tid)
 
-            if self.online_callback is not None:
-                _, online_tlwhs = self.online_callback(
+            if self.postprocessor is not None:
+                _, online_tlwhs = self.postprocessor.process_tracking(
                     frame_id=frame_id,
                     online_tlwhs=online_tlwhs,
                     online_ids=online_ids,
@@ -1775,8 +1794,8 @@ class MOTEvaluator:
                     online_ids.append(tid)
                     online_scores.append(t.score)
 
-            if self.online_callback is not None:
-                _, online_tlwhs = self.online_callback(
+            if self.postprocessor is not None:
+                _, online_tlwhs = self.postprocessor.process_tracking(
                     frame_id=frame_id,
                     online_tlwhs=online_tlwhs,
                     online_ids=online_ids,
