@@ -900,6 +900,10 @@ class MOTEvaluator:
 
         tracker = JDETracker(opt=self.args, frame_rate=self.dataloader.fps)
 
+        # Time just the detections
+        detect_timer = Timer()
+        detect_count = 0
+
         for cur_iter, (
             origin_imgs,
             letterbox_imgs,
@@ -940,6 +944,12 @@ class MOTEvaluator:
                 self.preproc_timer.tic()
                 self.preproc_timer_counter += 1
 
+
+                #
+                # BEGIN DETECTION
+                #
+                detect_timer.tic()
+
                 #assert origin_imgs.shape[0] == 1  # TODO: support batch
                 # origin_imgs = origin_imgs.squeeze(0).permute(1, 2, 0).contiguous()
                 dets, id_feature = tracker.detect(
@@ -948,12 +958,23 @@ class MOTEvaluator:
                     #origin_imgs.squeeze(0).permute(1, 2, 0),
                 )
 
-                # outputs[1] = None
-                # output_results = self.convert_to_coco_format_post_scale(outputs, ids)
-                # outputs, output_results = self.filter_outputs(outputs, output_results)
+                detect_timer.toc()
+                detect_count += 1
+                if detect_count % 2 == 0:
+                    logger.info(
+                        ">>> FairMOT Detection {} ({:.2f} fps)".format(
+                            frame_id,
+                            batch_size * 1.0 / max(1e-5, detect_timer.average_time),
+                        )
+                    )
+                #
+                # END DETECTION
+                #
 
-                # data_list.extend(output_results)
 
+                #
+                # BEGIN TRACKING
+                #
                 for frame_index in range(len(letterbox_imgs)):
                     frame_id = info_imgs[2][frame_index]
                     detections = dets[frame_index]
@@ -1005,6 +1026,10 @@ class MOTEvaluator:
                             (frame_id.item(), online_tlwhs, online_ids, online_scores)
                         )
                 # end frame loop
+
+                #
+                # END TRACKING
+                #
 
                 # if is_time_record:
                 #     track_end = time_synchronized()
